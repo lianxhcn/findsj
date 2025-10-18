@@ -1,9 +1,0 @@
-Note: The data file sjget_data_sj.dta will be automatically downloaded 
-from GitHub on first use of the findsj command.
-
-The file will be saved to your Stata PLUS directory.
-
-If automatic download fails, you can manually download it from:
-https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/sjget_data_sj.dta
-
-And save it to: `c(sysdir_plus)'s/sjget_data_sj.dta

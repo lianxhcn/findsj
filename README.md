@@ -61,7 +61,7 @@ findsj regression, markdown
 
 ### Export in LaTeX
 ```stata
-findsj "instrumental variables", latex
+findsj instrumental variables, latex
 ```
 
 ## Syntax
