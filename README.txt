@@ -2,7 +2,7 @@ NOTE:  readme.txt template -- do not remove empty entries, but you may
                               add entries for additional authors
 ------------------------------------------------------------------------------
 
-Package name:   
+Package name:   findsj
 
 DOI:  
 

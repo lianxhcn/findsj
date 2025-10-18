@@ -1,6 +1,7 @@
 ********************************************************************************
 * findsj Examples
-* Author: Yujun Lian (arlionn@163.com)
+* Authors: Yujun Lian (arlionn@163.com), Chucheng Wan (chucheng.wan@outlook.com)
+* Affiliation: Sun Yat-sen University, Guangzhou, China
 * Date: 2025-10-18
 * Description: Examples demonstrating findsj command usage
 ********************************************************************************
@@ -87,8 +88,8 @@ display as text _n(2) "{hline 80}"
 display as text "Example 6: Export in plain text"
 display as text "{hline 80}" _n
 
-* Plain text format (suitable for WeChat, etc.)
-findsj boottest, author plain n(1) noclip
+* Plain text format (suitable for academic papers)
+findsj "difference in differences", plain n(2) noclip
 
 
 ********************************************************************************
