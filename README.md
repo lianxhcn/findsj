@@ -27,7 +27,7 @@ ssc install findsj, replace
 
 ### Method 2: From GitHub
 ```stata
-net install findsj, from(https://raw.githubusercontent.com/USERNAME/findsj/main/)
+net install findsj, from(https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/)
 ```
 
 ### Method 3: Manual installation
@@ -176,7 +176,7 @@ findsj boottest, allresults
 
 For questions, bug reports, or feature requests:
 - Email: arlionn@163.com
-- GitHub Issues: [https://github.com/USERNAME/findsj/issues](https://github.com/USERNAME/findsj/issues)
+- GitHub Issues: [https://github.com/BlueDayDreeaming/findsj/issues](https://github.com/BlueDayDreeaming/findsj/issues)
 
 ## Citation
 
@@ -184,7 +184,7 @@ If you use `findsj` in your research, please cite:
 
 ```
 Lian, Yujun (2025). findsj: Search and cite articles from Stata Journal.
-Stata software package. Available at: https://github.com/USERNAME/findsj
+Stata software package. Available at: https://github.com/BlueDayDreeaming/findsj
 ```
 
 ## License
