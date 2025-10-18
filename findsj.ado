@@ -267,9 +267,17 @@ forvalues i = 1/`n' {
     if "`nopkg'" == "" {
         cap local volnum_url_i = volnum_url[`i']
         dis as text "    " `"{stata "search `art_id_i'":Search for package}"' _c
-        dis as text " | " `"{stata "net from http://www.stata-journal.com/software/sj`volnum_url_i'":Browse SJ software}"'
+        * Only show Browse SJ software link if volume/number info is available
+        if "`volnum_url_i'" != "" & "`volnum_url_i'" != "." {
+            dis as text " | " `"{stata "net from http://www.stata-journal.com/software/sj`volnum_url_i'":Browse SJ software}"'
+        }
+        else {
+            dis ""
+        }
     }
-    dis ""
+    else {
+        dis ""
+    }
 }
 
 if `total_results' > `n_display' {
