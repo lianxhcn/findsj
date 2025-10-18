@@ -93,23 +93,24 @@ qui {
     if _rc == 0 local fn_sj `"`r(fn)'"'
     
     if `"`fn_sj'"' == "" {
-        noi dis as text "Data file not found locally. Downloading from GitHub..."
-        cap findsj_download_data
-        if _rc == 0 {
-            cap findsj_finddata
-            if _rc == 0 local fn_sj `"`r(fn)'"'
-        }
+        noi dis as text "Note: Local data file not found."
+        noi dis as text "Continuing with basic article information only."
+        noi dis as text "For full functionality, the data file is optional."
     }
     
-    if `"`fn_sj'"' == "" {
-        noi dis as error "Failed to load SJ data file."
-        noi dis as text "Please ensure you have internet connection."
-        noi dis as text "The data file will be downloaded automatically on first use."
-        restore
-        exit 601
+    * If data file exists, merge with it
+    if `"`fn_sj'"' != "" {
+        merge 1:1 art_id using `"`fn_sj'"', nogen keep(match master)
+    }
+    else {
+        * Create placeholder variables if data file not available
+        gen volume = ""
+        gen number = ""
+        gen doi = ""
+        gen page = ""
+        gen volnum = .
     }
     
-    merge 1:1 art_id using `"`fn_sj'"', nogen keep(match)
     keep if selected == 1
     drop if missing(title) | title == "" | title == "."
     drop if missing(author) | author == "" | author == "."
