@@ -265,10 +265,11 @@ forvalues i = 1/`n' {
     }
     
     if "`nopkg'" == "" {
-        cap local volnum_url_i = volnum_url[`i']
         dis as text "    " `"{stata "search `art_id_i'":Search for package}"' _c
         * Only show Browse SJ software link if volume/number info is available
-        if "`volnum_url_i'" != "" & "`volnum_url_i'" != "." {
+        cap local volnum_url_i = volnum_url[`i']
+        cap local volume_i = volume[`i']
+        if _rc == 0 & "`volume_i'" != "" & "`volume_i'" != "." {
             dis as text " | " `"{stata "net from http://www.stata-journal.com/software/sj`volnum_url_i'":Browse SJ software}"'
         }
         else {
