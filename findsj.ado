@@ -93,13 +93,18 @@ qui {
     if _rc == 0 local fn_sj `"`r(fn)'"'
     
     if `"`fn_sj'"' == "" {
-        cap confirm file "D:\User\private\Desktop\stata\findsj\SJ\data_plus\sjget_data_sj.dta"
-        if _rc == 0 local fn_sj "D:\User\private\Desktop\stata\findsj\SJ\data_plus\sjget_data_sj.dta"
+        noi dis as text "Data file not found locally. Downloading from GitHub..."
+        cap findsj_download_data
+        if _rc == 0 {
+            cap findsj_finddata
+            if _rc == 0 local fn_sj `"`r(fn)'"'
+        }
     }
     
     if `"`fn_sj'"' == "" {
         noi dis as error "Failed to load SJ data file."
-        noi dis as text "To install: {stata ssc install findsj, replace}"
+        noi dis as text "Please ensure you have internet connection."
+        noi dis as text "The data file will be downloaded automatically on first use."
         restore
         exit 601
     }
@@ -646,3 +651,26 @@ qui{
   drop `var'_wordcount `var'_rev* `var'_Last  `var'_rest  `var'`suffix'  
 }  
 end 
+
+cap program drop findsj_download_data
+program define findsj_download_data
+version 14
+    qui {
+        * Download data file from GitHub
+        local data_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/sjget_data_sj.dta"
+        local save_path "`c(sysdir_plus)'s/sjget_data_sj.dta"
+        
+        * Create directory if it doesn't exist
+        cap mkdir "`c(sysdir_plus)'s"
+        
+        * Download the file
+        cap copy "`data_url'" "`save_path'", replace
+        if _rc {
+            noi dis as error "Failed to download data file from GitHub"
+            exit 601
+        }
+        else {
+            noi dis as text "Data file downloaded successfully to: `save_path'"
+        }
+    }
+end
