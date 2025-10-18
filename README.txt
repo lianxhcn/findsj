@@ -43,3 +43,4 @@ Internet connection required. Stata 14.0 or higher required.
 Installation: net install findsj, from(https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/)
 
 GitHub: https://github.com/BlueDayDreeaming/findsj
+

@@ -210,9 +210,10 @@ Copyright (c) 2025 Yujun Lian, CHUCHENG WAN
 ## Authors
 
 **Yujun Lian**
+- Affiliation: Sun Yat-sen University, Guangzhou, China
 - Email: arlionn@163.com
 
-**CHUCHENG WAN**
+**Chucheng Wan**
 - Affiliation: Sun Yat-sen University, Guangzhou, China
 - Email: chucheng.wan@outlook.com
 
