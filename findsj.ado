@@ -93,7 +93,16 @@ qui {
         exit
     }
     
+    * Extract article information from HTML
     findsj_strget v, gen(art_id) begin(`"article="') end(`"">"')
+    findsj_strget v, gen(title) begin(`"">"') end(`"</a></dt>"')
+    findsj_strget v, gen(author_raw) begin(`"<dd>"') end(`"</dd>"')
+    
+    * Clean up extracted data
+    gen author = author_raw
+    replace author = author[_n+1] if author == "" & author[_n+1] != ""
+    drop author_raw
+    
     drop v 
     keep if art_id != ""
     gen selected = 1
