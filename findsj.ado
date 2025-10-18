@@ -129,16 +129,40 @@ qui {
     }
     else {
         * Create placeholder variables if data file not available
-        gen volume = ""
-        gen number = ""
-        gen doi = ""
-        gen page = ""
-        gen volnum = .
+        cap confirm variable volume
+        if _rc gen volume = ""
+        cap confirm variable number
+        if _rc gen number = ""
+        cap confirm variable doi
+        if _rc gen doi = ""
+        cap confirm variable page
+        if _rc gen page = ""
+        cap confirm variable volnum
+        if _rc gen volnum = .
     }
     
     keep if selected == 1
-    drop if missing(title) | title == "" | title == "."
-    drop if missing(author) | author == "" | author == "."
+    
+    * Check if title and author variables exist and clean
+    cap confirm variable title
+    if _rc == 0 {
+        drop if missing(title) | title == "" | title == "."
+    }
+    else {
+        noi dis as error "Failed to extract article titles from search results."
+        noi dis as text "Please try again or check your internet connection."
+        restore
+        exit 198
+    }
+    
+    cap confirm variable author
+    if _rc == 0 {
+        drop if missing(author) | author == "" | author == "."
+    }
+    else {
+        * If author is missing, create placeholder
+        gen author = "Author information not available"
+    }
     
     local n_results = _N
     if `n_results' == 0 {
