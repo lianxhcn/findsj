@@ -1,0 +1,14 @@
+v 3
+d findsj: Search and cite articles from Stata Journal
+d
+d Distribution-Date: 20251018
+d License: MIT
+d
+d Author: Yujun Lian
+d Support: email arlionn@163.com
+d
+f findsj.ado
+f findsj.sthlp
+f findsj_examples.do
+f findsj_examples.log
+f README.txt

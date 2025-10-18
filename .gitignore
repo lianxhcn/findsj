@@ -1,0 +1,21 @@
+# Stata temporary files
+*.smcl
+*.gph
+*.dta~
+*.log~
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Backup files
+*_backup.*
+*.bak

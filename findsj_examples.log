@@ -1,0 +1,734 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  c:\Users\18522\.vscode\extensions\deepecon.stata-mcp-0.3.0\logs\fi
+> ndsj_examples_mcp.log
+  log type:  text
+ opened on:  18 Oct 2025, 14:24:14
+
+. *****************************************************************************
+> ***
+. * findsj Examples
+. * Author: Yujun Lian (arlionn@163.com)
+. * Date: 2025-10-18
+. * Description: Examples demonstrating findsj command usage
+. *****************************************************************************
+> ***
+. 
+. * COMMENTED OUT BY MCP: capture log close
+. * COMMENTED OUT BY MCP: log using "findsj_examples.log", replace text
+. 
+. version 14
+
+. clear all
+
+. set more off
+
+. 
+. *****************************************************************************
+> ***
+. * Example 1: Basic keyword search
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "Example 1: Search articles by keyword"
+Example 1: Search articles by keyword
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * Search for articles about panel data
+. findsj panel, n(3)
+
+------------------------------------------------------------
+  Searching Stata Journal articles...
+  Keywords: panel
+  Search by: keyword
+------------------------------------------------------------
+
+Found 101 article(s).
+
+------------------------------------------------------------
+  Search Results (Showing 3 of 90)
+------------------------------------------------------------
+
+[1] G. Yan and Q. Chen (2022). 
+    rcm: A command for the regression control method
+    Stata Journal 22(4): 842-883
+    Article page | PDF | DOI: 10.1177/1536867X221140960
+    Search for package | Browse SJ software
+
+[2] M. U. Karakaplan (2022). 
+    Panel stochastic frontier models with endogeneity
+    Stata Journal 22(3): 643-663
+    Article page | PDF | DOI: 10.1177/1536867X221124539
+    Search for package | Browse SJ software
+
+[3] Y. Sasaki and Y. Xin (2022). 
+    xtusreg: Software for dynamic panel regression under irregular time spacing
+    Stata Journal 22(3): 713-724
+    Article page | PDF | DOI: 10.1177/1536867X221124567
+    Search for package | Browse SJ software
+
+
+------------------------------------------------------------
+  Showing 3 of 90 results.
+  To see all results, add option: allresults
+  Example: findsj panel, allresults
+------------------------------------------------------------
+
+------------------------------------------------------------
+  Search completed. Found 90 article(s).
+  To view full search results online: Open in browser
+------------------------------------------------------------
+
+
+. 
+. * Store and display results
+. return list
+
+scalars:
+          r(n_results) =  90
+
+macros:
+              r(url_1) : "https://www.stata-journal.com/article.html?articl.."
+              r(doi_1) : "10.1177/1536867X221140960"
+           r(author_1) : "G. Yan and Q. Chen"
+            r(title_1) : "rcm: A command for the regression control method"
+           r(art_id_1) : "st0693"
+                r(url) : "https://www.stata-journal.com/sjsearch.html?choic.."
+              r(scope) : "keyword"
+           r(keywords) : "panel"
+
+. 
+. 
+. *****************************************************************************
+> ***
+. * Example 2: Search by author name
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "Example 2: Search articles by author"
+Example 2: Search articles by author
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * Find articles by David Roodman
+. findsj Roodman, author n(2)
+
+------------------------------------------------------------
+  Searching Stata Journal articles...
+  Keywords: Roodman
+  Search by: author
+------------------------------------------------------------
+
+Found 5 article(s).
+
+------------------------------------------------------------
+  Search Results (Showing 2 of 4)
+------------------------------------------------------------
+
+[1] D. Roodman, J. G. MacKinnon, M. &Oslash;. Nielsen, and M. D. Webb (2019). 
+    Fast and wild:  Bootstrap inference in Stata using boottest
+    Stata Journal 19(1): 4-60
+    Article page | PDF | DOI: 10.1177/1536867X19830877
+    Search for package | Browse SJ software
+
+[2] T. Bartus and D. Roodman (2014). 
+    Estimation of multiprocess survival models with cmp
+    Stata Journal 14(4): 756-777
+    Article page | PDF | DOI: 10.1177/1536867X1401400404
+    Search for package | Browse SJ software
+
+
+------------------------------------------------------------
+  Showing 2 of 4 results.
+  To see all results, add option: allresults
+  Example: findsj Roodman, allresults
+------------------------------------------------------------
+
+------------------------------------------------------------
+  Search completed. Found 4 article(s).
+  To view full search results online: Open in browser
+------------------------------------------------------------
+
+
+. 
+. * Display returned values
+. display as text _n "Number of results: " as result r(n_results)
+
+Number of results: 4
+
+. display as text "First article: " as result r(title_1)
+First article: Fast and wild:  Bootstrap inference in Stata using boottest
+
+. 
+. 
+. *****************************************************************************
+> ***
+. * Example 3: Search by article title
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "Example 3: Search articles by title"
+Example 3: Search articles by title
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * Search for synthetic control articles
+. findsj synth, title n(2)
+
+------------------------------------------------------------
+  Searching Stata Journal articles...
+  Keywords: synth
+  Search by: title
+------------------------------------------------------------
+
+Found 5 article(s).
+
+------------------------------------------------------------
+  Search Results (Showing 2 of 3)
+------------------------------------------------------------
+
+[1] G. Cerulli (2020). 
+    Nonparametric synthetic control using the npsynth command
+    Stata Journal 20(4): 844-865
+    Article page | PDF | DOI: 10.1177/1536867X20976315
+    Search for package | Browse SJ software
+
+[2] S. Galiani and B. Quistorff (2017). 
+    The synth_runner package: Utilities to automate synthetic control estimatio
+> n using synth
+    Stata Journal 17(4): 834-849
+    Article page | PDF | DOI: 10.1177/1536867X1801700404
+    Search for package | Browse SJ software
+
+
+------------------------------------------------------------
+  Showing 2 of 3 results.
+  To see all results, add option: allresults
+  Example: findsj synth, allresults
+------------------------------------------------------------
+
+------------------------------------------------------------
+  Search completed. Found 3 article(s).
+  To view full search results online: Open in browser
+------------------------------------------------------------
+
+
+. 
+. 
+. *****************************************************************************
+> ***
+. * Example 4: Export citations in Markdown format
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "Example 4: Export citations in Markdown"
+Example 4: Export citations in Markdown
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * Export in Markdown format (without clipboard for log clarity)
+. findsj treatment, markdown n(2) noclip
+
+------------------------------------------------------------
+  Searching Stata Journal articles...
+  Keywords: treatment
+  Search by: keyword
+  Export format: markdown  
+------------------------------------------------------------
+
+Found 79 article(s).
+
+------------------------------------------------------------
+  Search Results (Showing 2 of 74)
+------------------------------------------------------------
+
+[1] T. Hasebe (2022). 
+    Endogenous models of binary choice outcomes: Copula-based maximum-likelihoo
+> d estimation and treatment effects
+    Stata Journal 22(4): 734-771
+    Article page | PDF | DOI: 10.1177/1536867X221140943
+    Search for package | Browse SJ software
+
+[2] D. Benson, M. A. Masten, and A. Torgovitsky (2022). 
+    ivcrc: An instrumental-variables estimator for the correlated random-coeffi
+> cients model
+    Stata Journal 22(3): 469-495
+    Article page | PDF | DOI: 10.1177/1536867X221124449
+    Search for package | Browse SJ software
+
+
+------------------------------------------------------------
+  Showing 2 of 74 results.
+  To see all results, add option: allresults
+  Example: findsj treatment, allresults
+------------------------------------------------------------
+
+------------------------------------------------------------
+  Search completed. Found 74 article(s).
+  To view full search results online: Open in browser
+------------------------------------------------------------
+
+
+. 
+. 
+. *****************************************************************************
+> ***
+. * Example 5: Export citations in LaTeX format
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "Example 5: Export citations in LaTeX"
+Example 5: Export citations in LaTeX
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * Export in LaTeX format
+. findsj regression, latex n(2) noclip
+
+------------------------------------------------------------
+  Searching Stata Journal articles...
+  Keywords: regression
+  Search by: keyword
+  Export format:  latex 
+------------------------------------------------------------
+
+Found 250 article(s).
+
+------------------------------------------------------------
+  Search Results (Showing 2 of 229)
+------------------------------------------------------------
+
+[1] G. Yan and Q. Chen (2022). 
+    rcm: A command for the regression control method
+    Stata Journal 22(4): 842-883
+    Article page | PDF | DOI: 10.1177/1536867X221140960
+    Search for package | Browse SJ software
+
+[2] M. Bertanha, A. H. McCallum, A. Payne, N. Seegert (2022). 
+    Bunching estimation of elasticities using Stata
+    Stata Journal 22(3): 597-624
+    Article page | PDF | DOI: 10.1177/1536867X221124534
+    Search for package | Browse SJ software
+
+
+------------------------------------------------------------
+  Showing 2 of 229 results.
+  To see all results, add option: allresults
+  Example: findsj regression, allresults
+------------------------------------------------------------
+
+------------------------------------------------------------
+  Search completed. Found 229 article(s).
+  To view full search results online: Open in browser
+------------------------------------------------------------
+
+
+. 
+. 
+. *****************************************************************************
+> ***
+. * Example 6: Export in plain text format
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "Example 6: Export in plain text"
+Example 6: Export in plain text
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * Plain text format (suitable for WeChat, etc.)
+. findsj boottest, author plain n(1) noclip
+
+------------------------------------------------------------
+  Searching Stata Journal articles...
+  Keywords: boottest
+  Search by: author
+  Export format:   plain
+------------------------------------------------------------
+
+No articles found matching: boottest
+Try different keywords or search scope.
+
+. 
+. 
+. *****************************************************************************
+> ***
+. * Example 7: Display more results
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "Example 7: Display more results"
+Example 7: Display more results
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * Show 10 results
+. findsj panel, n(10)
+
+------------------------------------------------------------
+  Searching Stata Journal articles...
+  Keywords: panel
+  Search by: keyword
+------------------------------------------------------------
+
+Found 101 article(s).
+
+------------------------------------------------------------
+  Search Results (Showing 10 of 90)
+------------------------------------------------------------
+
+[1] G. Yan and Q. Chen (2022). 
+    rcm: A command for the regression control method
+    Stata Journal 22(4): 842-883
+    Article page | PDF | DOI: 10.1177/1536867X221140960
+    Search for package | Browse SJ software
+
+[2] P. Chen, Y. Karavias, and E. Tzavalis (2022). 
+    Panel unit-root tests with structural breaks
+    Stata Journal 22(3): 664-678
+    Article page | PDF | DOI: 10.1177/1536867X221124541
+    Search for package | Browse SJ software
+
+[3] M. U. Karakaplan (2022). 
+    Panel stochastic frontier models with endogeneity
+    Stata Journal 22(3): 643-663
+    Article page | PDF | DOI: 10.1177/1536867X221124539
+    Search for package | Browse SJ software
+
+[4] Y. Sasaki and Y. Xin (2022). 
+    xtusreg: Software for dynamic panel regression under irregular time spacing
+    Stata Journal 22(3): 713-724
+    Article page | PDF | DOI: 10.1177/1536867X221124567
+    Search for package | Browse SJ software
+
+[5] D. Clarke and K. Tapia-Schythe (2021). 
+    Implementing the panel event study
+    Stata Journal 21(4): 853-884
+    Article page | PDF | DOI: 10.1177/1536867X211063144
+    Search for package | Browse SJ software
+
+[6] S. Kripfganz and V. Sarafidis (2021). 
+    Instrumental-variable estimation of large-T panel-data models with common f
+> actors
+    Stata Journal 21(3): 659-686
+    Article page | PDF | DOI: 10.1177/1536867X211045558
+    Search for package | Browse SJ software
+
+[7] J. Ditzen (2021). 
+    Estimating long-run effects and the exponent of cross-sectional dependence:
+>  An update to xtdcce2
+    Stata Journal 21(3): 687-707
+    Article page | PDF | DOI: 10.1177/1536867X211045560
+    Search for package | Browse SJ software
+
+[8] N. J. Cox (2021). 
+    Speaking Stata: Front-and-back plots to ease spaghetti and paella problems
+    Stata Journal 21(2): 539-554
+    Article page | PDF | DOI: 10.1177/1536867X211025838
+    Search for package | Browse SJ software
+
+[9] H. Kr&ouml;ger and J. Hartmann (2021). 
+    Extending the Kitagawa&ndash;Oaxaca&ndash;Blinder decomposition approach to
+>  panel data
+    Stata Journal 21(2): 360-410
+    Article page | PDF | DOI: 10.1177/1536867X211025800
+    Search for package | Browse SJ software
+
+[10] K. Du, Y. Zhang, and Q. Zhou (2020). 
+    Fitting partially linear functional-coefficient panel-data models with Stat
+> a
+    Stata Journal 20(4): 976-998
+    Article page | PDF | DOI: 10.1177/1536867X20976339
+    Search for package | Browse SJ software
+
+
+------------------------------------------------------------
+  Showing 10 of 90 results.
+  To see all results, add option: allresults
+  Example: findsj panel, allresults
+------------------------------------------------------------
+
+------------------------------------------------------------
+  Search completed. Found 90 article(s).
+  To view full search results online: Open in browser
+------------------------------------------------------------
+
+
+. 
+. 
+. *****************************************************************************
+> ***
+. * Example 8: Display all results
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "Example 8: Display all results"
+Example 8: Display all results
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * Show all results for a specific search
+. findsj xtabond, title allresults
+
+------------------------------------------------------------
+  Searching Stata Journal articles...
+  Keywords: xtabond
+  Search by: title
+------------------------------------------------------------
+
+Found 1 article(s).
+
+------------------------------------------------------------
+  Search Results (Showing 1 of 1)
+------------------------------------------------------------
+
+[1] D. Roodman (2009). 
+    How to do xtabond2: An introduction to difference and system GMM in Stata
+    Stata Journal 9(1): 86-136
+    Article page | PDF | DOI: 10.1177/1536867X0900900106
+    Search for package | Browse SJ software
+
+
+------------------------------------------------------------
+  Search completed. Found 1 article(s).
+  To view full search results online: Open in browser
+------------------------------------------------------------
+
+
+. 
+. 
+. *****************************************************************************
+> ***
+. * Example 9: Search without browser links
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "Example 9: Search without browser links"
+Example 9: Search without browser links
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * Suppress browser links
+. findsj instrumental, nobrowser n(2)
+
+------------------------------------------------------------
+  Searching Stata Journal articles...
+  Keywords: instrumental
+  Search by: keyword
+------------------------------------------------------------
+
+Found 51 article(s).
+
+------------------------------------------------------------
+  Search Results (Showing 2 of 45)
+------------------------------------------------------------
+
+[1] D. Benson, M. A. Masten, and A. Torgovitsky (2022). 
+    ivcrc: An instrumental-variables estimator for the correlated random-coeffi
+> cients model
+    Stata Journal 22(3): 469-495
+    Search for package | Browse SJ software
+
+[2] D. M. Kaplan (2022). 
+    Smoothed instrumental variables quantile regression
+    Stata Journal 22(2): 379-403
+    Search for package | Browse SJ software
+
+
+------------------------------------------------------------
+  Showing 2 of 45 results.
+  To see all results, add option: allresults
+  Example: findsj instrumental, allresults
+------------------------------------------------------------
+
+------------------------------------------------------------
+  Search completed. Found 45 article(s).
+------------------------------------------------------------
+
+
+. 
+. 
+. *****************************************************************************
+> ***
+. * Example 10: Comprehensive search with multiple options
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "Example 10: Comprehensive search"
+Example 10: Comprehensive search
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * Search with markdown export, no clipboard, no package info
+. findsj causality, markdown n(3) noclip nopkg
+
+------------------------------------------------------------
+  Searching Stata Journal articles...
+  Keywords: causality
+  Search by: keyword
+  Export format: markdown  
+------------------------------------------------------------
+
+Found 9 article(s).
+
+------------------------------------------------------------
+  Search Results (Showing 3 of 8)
+------------------------------------------------------------
+
+[1] C. F. Baum, S. Hurn, and J. Otero (2022). 
+    Testing for time-varying Granger causality
+    Stata Journal 22(2): 355-378
+    Article page | PDF | DOI: 10.1177/1536867X221106403
+
+[2] J. Li, M. J. Zyphur, G. Sugihara, and P. J. Laub (2021). 
+    Beyond linearity, stability, and equilibrium: The edm package for empirical
+>  dynamic modeling and convergent cross-mapping in Stata
+    Stata Journal 21(1): 220-258
+    Article page | PDF | DOI: 10.1177/1536867X211000030
+
+[3] M. Asali (2020). 
+    vgets: A command to estimate general-to-specific VARs, Granger causality,hf
+> ilbreak steady-state effects, and cumulative impulse&ndash;responses
+    Stata Journal 20(2): 426-434
+    Article page | PDF | DOI: 10.1177/1536867X20931004
+
+
+------------------------------------------------------------
+  Showing 3 of 8 results.
+  To see all results, add option: allresults
+  Example: findsj causality, allresults
+------------------------------------------------------------
+
+------------------------------------------------------------
+  Search completed. Found 8 article(s).
+  To view full search results online: Open in browser
+------------------------------------------------------------
+
+
+. 
+. 
+. *****************************************************************************
+> ***
+. * Summary
+. *****************************************************************************
+> ***
+. 
+. display as text _n(2) "{hline 80}"
+
+
+-------------------------------------------------------------------------------
+> -
+
+. display as text "All examples completed successfully!"
+All examples completed successfully!
+
+. display as text "{hline 80}" _n
+-------------------------------------------------------------------------------
+> -
+
+
+. 
+. * COMMENTED OUT BY MCP: log close
+. 
+. capture log close _all
