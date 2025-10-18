@@ -105,9 +105,13 @@ qui {
     if _rc == 0 local fn_sj `"`r(fn)'"'
     
     if `"`fn_sj'"' == "" {
-        noi dis as text "Note: Local data file not found."
-        noi dis as text "Continuing with basic article information only."
-        noi dis as text "For full functionality, the data file is optional."
+        noi dis as text ""
+        noi dis as text "{hline 60}"
+        noi dis as text "  Note: Data file not available"
+        noi dis as text "  The program will continue with basic search results."
+        noi dis as text "  Article IDs and links will still be displayed."
+        noi dis as text "{hline 60}"
+        noi dis as text ""
     }
     
     * If data file exists, merge with it
@@ -134,7 +138,8 @@ qui {
         exit
     }
     
-    gsort -volnum
+    * Sort by volnum if available, otherwise keep original order
+    cap gsort -volnum
     
     local url_base "https://www.stata-journal.com/article.html?article="
     gen url_html = "`url_base'" + art_id
@@ -143,15 +148,22 @@ qui {
     cap confirm variable doi
     if _rc == 0 gen url_pdf = "`url_pdf_base'" + doi if doi != "" & doi != "."
     
-    gen volnum_str = volume + "(" + number + ")"
-    gen volnum_url = volume + "-" + number
+    * Generate volume/number strings if variables exist
+    cap confirm variable volume
+    if _rc == 0 {
+        gen volnum_str = volume + "(" + number + ")"
+        gen volnum_url = volume + "-" + number
+        gen year = string(2000 + real(volume))
+    }
+    else {
+        gen volnum_str = ""
+        gen volnum_url = ""
+        gen year = ""
+    }
     
     cap confirm variable page
     if _rc == 0 gen page_str = ": " + page if page != "" & page != "."
     else gen page_str = ""
-    
-    cap confirm variable volume
-    if _rc == 0 gen year = string(2000 + real(volume))
     
     if "`markdown'" != "" {
         gen cite_text = author + " (" + year + "). " + title + ". " + ///
