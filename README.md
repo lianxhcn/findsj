@@ -191,7 +191,7 @@ Stata software package. Available at: https://github.com/BlueDayDreeaming/findsj
 
 MIT License - see [LICENSE](LICENSE) file for details
 
-Copyright (c) 2025 Yujun Lian
+Copyright (c) 2025 Yujun Lian, CHUCHENG WAN
 
 ## Version History
 
@@ -207,10 +207,14 @@ Copyright (c) 2025 Yujun Lian
 - Export in Markdown, LaTeX, and plain text formats
 - Integrated 13 sub-programs
 
-## Author
+## Authors
 
 **Yujun Lian**
 - Email: arlionn@163.com
+
+**CHUCHENG WAN**
+- Affiliation: Sun Yat-sen University, Guangzhou, China
+- Email: chucheng.wan@outlook.com
 
 ---
 
