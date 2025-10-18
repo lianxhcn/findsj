@@ -66,13 +66,25 @@ qui {
         exit 631
     }
     
-    cap infix strL v 1-1000 using "`sj_search_result'.txt", clear
+    * Use import delimited for better encoding handling
+    cap import delimited "`sj_search_result'.txt", delim("@#@") clear varnames(nonames) stringcols(_all)
     if _rc {
-        noi dis as error "Failed to parse search results."
-        restore
-        exit 198
+        * Fallback to infix if import delimited fails
+        cap infix strL v 1-20000 using "`sj_search_result'.txt", clear
+        if _rc {
+            noi dis as error "Failed to parse search results."
+            noi dis as error "Error code: " _rc
+            restore
+            exit 198
+        }
+    }
+    else {
+        * Rename first variable to v for consistency
+        rename v1 v
     }
     
+    * Clean the data
+    cap drop if v == ""
     keep if regexm(v, ".*<d[td]>.*")
     if _N == 0 {
         noi dis as error "No articles found matching: `keywords'"
