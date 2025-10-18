@@ -1,0 +1,3 @@
+v 3
+d findsj package from https://github.com/BlueDayDreeaming/findsj
+p findsj Search and cite articles from Stata Journal
