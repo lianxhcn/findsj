@@ -1,453 +1,294 @@
-﻿# findsj# findsj
+# findsj
 
+Search and cite articles from Stata Journal
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Stata](https://img.shields.io/badge/Stata-14%2B-blue)](https://www.stata.com/)
+[![Version](https://img.shields.io/badge/version-1.0.3-brightgreen)](https://github.com/BlueDayDreeaming/findsj)
 
-Search and cite articles from Stata JournalSearch and cite articles from Stata Journal
+[English](README.md) | [中文文档](README_CN.md)
 
+## Overview
 
+`findsj` is a Stata command that searches articles from the **Stata Journal (SJ)** and **Stata Technical Bulletin (STB)** by keywords, author names, or article titles. It displays comprehensive article information with clickable links to official citation downloads (BibTeX/RIS) and supports batch exporting citations in multiple formats.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## Key Features
 
-[![Stata](https://img.shields.io/badge/Stata-14%2B-blue)](https://www.stata.com/)[![Stata](https://img.shields.io/badge/Stata-14%2B-blue)](https://www.stata.com/)
+- 🔍 **Smart Search**: Search by keyword, author name, or article title
+- 📚 **Official Citations**: Direct links to BibTeX and RIS downloads from Stata Journal
+- 📋 **Batch Export**: Export multiple citations to clipboard in plain text, Markdown, or LaTeX format
+- 🔗 **Rich Links**: Access to article pages, PDF downloads, Google Scholar, and related packages
+- 🎯 **DOI Support**: Optional DOI retrieval from official sources
+- ⚡ **Fast & Easy**: Simple syntax with smart defaults
 
-[![Version](https://img.shields.io/badge/version-1.0.3-brightgreen)](https://github.com/BlueDayDreeaming/findsj)[![Version](https://img.shields.io/badge/version-1.0.3-brightgreen)](https://github.com/BlueDayDreeaming/findsj)
+## Installation
 
+### Method 1: From SSC (when available)
 
+```stata
+ssc install findsj, replace
+```
 
-[English](README.md) | [中文文档](README_CN.md)[English](README.md) | [中文文档](README_CN.md)
+### Method 2: From GitHub
 
+```stata
+net install findsj, from(https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/)
+```
 
+### Method 3: From Gitee (China mirror)
 
-## Overview## Overview
+```stata
+net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/)
+```
 
+### Method 4: Manual Installation
 
+1. Download all files to a local directory
+2. Run in Stata:
 
-`findsj` is a Stata command that searches articles from the **Stata Journal (SJ)** and **Stata Technical Bulletin (STB)** by keywords, author names, or article titles. It displays comprehensive article information with clickable links to official citation downloads (BibTeX/RIS) and supports batch exporting citations in multiple formats.`findsj` is a Stata command that searches articles from the **Stata Journal (SJ)** and **Stata Technical Bulletin (STB)** by keywords, author names, or article titles. It displays comprehensive article information with clickable links to official citation downloads (BibTeX/RIS) and supports batch exporting citations in multiple formats.
-
-
-
-## Key Features## Key Features
-
-
-
-- 🔍 **Smart Search**: Search by keyword, author name, or article title-  **Smart Search**: Search by keyword, author name, or article title
-
-- 📚 **Official Citations**: Direct links to BibTeX and RIS downloads from Stata Journal-  **Official Citations**: Direct links to BibTeX and RIS downloads from Stata Journal
-
-- 📋 **Batch Export**: Export multiple citations to clipboard in plain text, Markdown, or LaTeX format-  **Batch Export**: Export multiple citations to clipboard in plain text, Markdown, or LaTeX format
-
-- 🔗 **Rich Links**: Access to article pages, PDF downloads, Google Scholar, and related packages-  **Rich Links**: Access to article pages, PDF downloads, Google Scholar, and related packages
-
-- 🎯 **DOI Support**: Optional DOI retrieval from official sources-  **DOI Support**: Optional DOI retrieval from official sources
-
-- ⚡ **Fast & Easy**: Simple syntax with smart defaults-  **Fast & Easy**: Simple syntax with smart defaults
-
-
-
-## Installation## Installation
-
-
-
-### Method 1: From SSC (when available)### Method 1: From SSC (when available)
-
-
-
-```stata```stata
-
-ssc install findsj, replacessc install findsj, replace
-
-``````
-
-
-
-### Method 2: From GitHub### Method 2: From GitHub
-
-
-
-```stata```stata
-
-net install findsj, from(https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/)net install findsj, from(https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/)
-
-``````
-
-
-
-### Method 3: From Gitee (China mirror)### Method 3: From Gitee (China mirror)
-
-
-
-```stata```stata
-
-net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/)net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/)
-
-``````
-
-
-
-### Method 4: Manual Installation### Method 4: Manual Installation
-
-
-
-1. Download all files to a local directory1. Download all files to a local directory
-
-2. Run in Stata:2. Run in Stata:
-
-
-
-```stata```stata
-
-net install findsj, from("path/to/directory")net install findsj, from("path/to/directory")
-
-``````
-
+```stata
+net install findsj, from("path/to/directory")
+```
 
 ## Quick Start
 
-### Basic Search
+### 1. Basic Search
+
+Search by keyword:
 
 ```stata
-findsj panel data
+findsj machine learning
 ```
 
-This displays the first 5 articles matching "panel data" with:
-
-- Article title, authors, and journal information
-- Clickable links to article page and PDF
-- **BibTeX and RIS download links** (📚 Citation: BibTeX | RIS)
-- Links to related Stata packages
-- Google Scholar search link
-
-### Search by Author
+Search by author:
 
 ```stata
-findsj Baum, author
+findsj, author(Mitchell)
 ```
 
-### Search in Title Only
+### 2. Get Citations
+
+Use the clickable **BibTeX** or **RIS** buttons in the results table to download citations directly from the Stata Journal website.
+
+### 3. Batch Export
+
+Export all citations to clipboard:
 
 ```stata
-findsj panel data, title
+findsj machine learning, export
 ```
 
-### Show More Results
+Export in Markdown format:
 
 ```stata
-findsj panel data, n(10)
+findsj propensity score, export markdown
 ```
 
-### Export Citations to Clipboard
+Export in LaTeX format:
 
 ```stata
-* Export first 5 results in plain text format
-findsj panel data, n(5) plain
-
-* Export first 5 results in Markdown format
-findsj panel data, n(5) markdown
-
-* Export first 5 results in LaTeX format
-findsj panel data, n(5) latex
+findsj difference-in-differences, export latex
 ```
-
-After running these commands, citations are automatically copied to your clipboard. You can paste them directly into your documents!
 
 ## Syntax
 
 ```stata
-findsj keywords [, options]
+findsj [keyword(s)] [, options]
 ```
 
 ### Options
 
-| Option | Description |
-|--------|-------------|
-| **Search Scope** | |
-| `author` | Search by author name |
-| `title` | Search by article title only |
-| `keyword` | Search by keywords in full text (default) |
-| **Export Format** | |
-| `plain` | Export citations in plain text format to clipboard |
-| `markdown` | Export citations in Markdown format to clipboard |
-| `latex` (or `tex`) | Export citations in LaTeX format to clipboard |
-| **Display Options** | |
-| `n(#)` | Number of results to display/export (default: 5) |
-| `allresults` | Display and export all search results |
-| `getdoi` | Retrieve DOI information in real-time (slower) |
+#### Search Options
+- `author(name)` - Search by author name
+- `title(text)` - Search by article title
+- `issue(volno)` - Limit to specific issue (e.g., "20(4)")
+- `from(year)` - Earliest publication year
+- `to(year)` - Latest publication year
 
-**Note**: When using export options (`plain`, `markdown`, or `latex`), DOI information is automatically retrieved.
+#### Display Options
+- `detail` - Show detailed article information
+- `nolink` - Hide clickable links in results
+- `max(#)` - Maximum results to display (default: 20, 0 = all)
 
-## Understanding the Output
+#### Export Options
+- `export` - Export all results to clipboard in plain text
+- `markdown` - Export in Markdown format
+- `latex` - Export in LaTeX format
 
-### Example Output
-
-```
-[1] N. J. Cox. (2007).
-    Speaking Stata: Identifying spells
-    _Stata Journal_ 7(2)
-    Article page | [PDF] | [Google]
-    
-    📚 Citation: BibTeX | RIS
-    
-    Search for package | Browse SJ software
-```
-
-### Citation Download Links
-
-Each result includes **📚 Citation: BibTeX | RIS** links:
-
-- **BibTeX**: Download citation in BibTeX format for LaTeX documents
-- **RIS**: Download citation in RIS format for Zotero, Mendeley, EndNote, etc.
-
-These links direct to the official Stata Journal citation service. Click the links to download citation files.
-
-### Journal Information
-
-```
-_Stata Journal_ 7(2)
-                ↑ ↑
-                │ └── Issue Number (1-4, quarterly)
-                └──── Volume Number
-```
-
-**Volume and Issue:**
-
-- Volume 7 ≈ Published in 2007
-- Issue 2 = June (Q2)
-  - Issue 1: March
-  - Issue 2: June
-  - Issue 3: September
-  - Issue 4: December
-
-### DOI Information
-
-When using `getdoi` option or export formats, DOI is displayed:
-
-```
-[1] N. J. Cox. (2007).
-    Speaking Stata: Identifying spells
-    _Stata Journal_ 7(2)
-    Article page | [PDF] | [Google]
-    DOI: 10.1177/1536867X0700700209    ← DOI added
-    
-    📚 Citation: BibTeX | RIS
-```
-
-## Export Formats
-
-### Plain Text Format
-
-```stata
-findsj panel data, n(3) plain
-```
-
-Output (copied to clipboard):
-
-```
-[1] N. J. Cox. (2007). Speaking Stata: Identifying spells. Stata Journal 7(2). DOI: 10.1177/1536867X0700700209
-
-[2] P. W. Jeanty. (2010). Using the world development indicators database for statistical analysis in Stata. Stata Journal 10(1). DOI: 10.1177/1536867X1001000105
-
-[3] P. W. Jeanty. (2011). Managing the U.S. Census 2000 and World Development Indicators databases for statistical analysis in Stata. Stata Journal 11(4). DOI: 10.1177/1536867X1201100406
-```
-
-### Markdown Format
-
-```stata
-findsj panel data, n(3) markdown
-```
-
-Output (copied to clipboard):
-
-```markdown
-1. N. J. Cox. (2007). [Speaking Stata: Identifying spells](https://www.stata-journal.com/article.html?article=st0123). *Stata Journal* 7(2). DOI: [10.1177/1536867X0700700209](https://doi.org/10.1177/1536867X0700700209)
-
-2. P. W. Jeanty. (2010). [Using the world development indicators database for statistical analysis in Stata](https://www.stata-journal.com/article.html?article=st0178). *Stata Journal* 10(1). DOI: [10.1177/1536867X1001000105](https://doi.org/10.1177/1536867X1001000105)
-
-3. P. W. Jeanty. (2011). [Managing the U.S. Census 2000 and World Development Indicators databases for statistical analysis in Stata](https://www.stata-journal.com/article.html?article=st0247). *Stata Journal* 11(4). DOI: [10.1177/1536867X1201100406](https://doi.org/10.1177/1536867X1201100406)
-```
-
-### LaTeX Format
-
-```stata
-findsj panel data, n(3) latex
-```
-
-Output (copied to clipboard):
-
-```latex
-\begin{enumerate}
-\item N. J. Cox. (2007). \href{https://www.stata-journal.com/article.html?article=st0123}{Speaking Stata: Identifying spells}. \textit{Stata Journal} 7(2). DOI: \href{https://doi.org/10.1177/1536867X0700700209}{10.1177/1536867X0700700209}
-
-\item P. W. Jeanty. (2010). \href{https://www.stata-journal.com/article.html?article=st0178}{Using the world development indicators database for statistical analysis in Stata}. \textit{Stata Journal} 10(1). DOI: \href{https://doi.org/10.1177/1536867X1001000105}{10.1177/1536867X1001000105}
-
-\item P. W. Jeanty. (2011). \href{https://www.stata-journal.com/article.html?article=st0247}{Managing the U.S. Census 2000 and World Development Indicators databases for statistical analysis in Stata}. \textit{Stata Journal} 11(4). DOI: \href{https://doi.org/10.1177/1536867X1201100406}{10.1177/1536867X1201100406}
-\end{enumerate}
-```
+#### Advanced Options
+- `verbose` - Show detailed operation information
+- `getdoi` - Fetch real-time DOI from Stata Journal (slower)
 
 ## Examples
 
-See `findsj_examples.do` for comprehensive examples covering all features.
-
-### Example 1: Basic Keyword Search
+### Example 1: Keyword Search
 
 ```stata
-findsj panel data
+findsj regression
 ```
 
-Shows first 5 articles matching "panel data"
-
-### Example 2: Limit Results
+### Example 2: Author Search with Details
 
 ```stata
-findsj panel data, n(10)
+findsj, author(Nichols) detail
 ```
 
-Shows first 10 results
-
-### Example 3: Search by Author
+### Example 3: Specific Issue
 
 ```stata
-findsj Baum, author
-findsj "David Roodman", author n(3)
+findsj, issue(20(4))
 ```
 
-### Example 4: Search in Title Only
+### Example 4: Year Range
 
 ```stata
-findsj panel data, title
+findsj panel data, from(2015) to(2020)
 ```
 
-### Example 5: Get DOI Information
+### Example 5: Export Citations
 
 ```stata
-findsj panel data, n(5) getdoi
+findsj matching, export markdown
 ```
 
-Retrieves DOI from Stata Journal website (slower but includes DOI in display)
-
-### Example 6: Export in Plain Text
+### Example 6: Title Search
 
 ```stata
-findsj panel data, n(5) plain
+findsj, title(treatment effects)
 ```
 
-Copies 5 citations in plain text to clipboard
-
-### Example 7: Export in Markdown
+### Example 7: Full Information with DOI
 
 ```stata
-findsj panel data, n(5) markdown
+findsj propensity score, detail getdoi
 ```
 
-Copies 5 citations in Markdown format to clipboard
-
-### Example 8: Export in LaTeX
+### Example 8: Combined Conditions
 
 ```stata
-findsj panel data, n(5) latex
+findsj causal inference, author(Angrist) from(2000) detail
 ```
 
-Copies 5 citations in LaTeX format to clipboard
+## Features in Detail
 
-### Example 9: Export All Results
+### 1. Search Capabilities
 
-```stata
-findsj boottest, author allresults markdown
-```
+- **Flexible Search**: Combine keywords with options for precise results
+- **Smart Matching**: Case-insensitive search with partial matching
+- **Multiple Fields**: Search across title, author, abstract, and keywords
+- **Date Filtering**: Restrict results by publication year range
 
-Exports all results by author "boottest" in Markdown format
+### 2. Official Citation Downloads
 
-## Stored Results
+The results table includes clickable buttons for each article:
 
-After running `findsj`, the following values are stored in `r()`:
+- **BibTeX**: Download BibTeX citation directly from Stata Journal
+- **RIS**: Download RIS citation for reference managers
 
-**Scalars:**
+These links connect to the official Stata Journal citation service at:
+`https://www.stata-journal.com/ris.php?doi={article_doi}`
 
-- `r(n_results)` - Number of articles found
+### 3. Batch Citation Export
 
-**Macros:**
+Export multiple citations at once to your clipboard:
 
-- `r(keywords)` - Search keywords
-- `r(scope)` - Search scope (author/title/keyword)
-- `r(url)` - Search URL
-- `r(format)` - Export format (plain/markdown/latex), if used
+- **Plain Text**: Simple citation list
+- **Markdown**: Formatted for Markdown documents
+- **LaTeX**: Ready for LaTeX bibliographies
 
-**For each result i (i=1,2,3,...):**
+After export, paste directly into your document with `Ctrl+V` (Windows) or `Cmd+V` (Mac).
 
-- `r(art_id_i)` - Article ID
-- `r(title_i)` - Article title
-- `r(author_i)` - Author names
-- `r(issue_i)` - Journal volume and issue
-- `r(doi_i)` - DOI (when getdoi is used or export format specified)
-- `r(url_i)` - Article URL
+### 4. Rich Information Display
 
-**Example:**
+Each result includes:
 
-```stata
-findsj panel data, n(3)
-return list
+- Article title and authors
+- Publication details (journal, year, volume, issue, pages)
+- DOI and links
+- Abstract and keywords
+- Related Stata package information
 
-display r(n_results)      // Shows: 69
-display r(keywords)       // Shows: panel data
-display r(title_1)        // Shows first article title
-display r(author_1)       // Shows first article authors
-```
+### 5. Clickable Links
 
-## System Requirements
+Direct access to:
 
-- **Stata Version**: 14.0 or higher
-- **Internet Connection**: Required for searching and retrieving DOI
-- **Clipboard Support**: Windows and macOS (Linux users can still view results, but clipboard export may not work)
+- Article PDF on Stata Journal website
+- Article page with full details
+- Google Scholar search for the article
+- Related Stata package download
 
-## Files Included
+## Data Source
 
-- `findsj.ado` - Main program file
-- `findsj.sthlp` - Help documentation
-- `findsj.pkg` - Package definition
-- `findsj_examples.do` - Comprehensive example script
-- `stata.toc` - Table of contents
-- `README.md` - This file (English)
-- `README_CN.md` - Chinese documentation
-- `README.txt` - Plain text readme
-- `LICENSE` - MIT License
+`findsj` uses the official Stata Journal article database, which includes:
 
-## What's New in Version 1.0.3 (2025-10-22)
+- All **Stata Journal (SJ)** articles
+- All **Stata Technical Bulletin (STB)** articles
+- Regular updates with new publications
+- Complete citation information and DOIs
 
-### Major Changes
+## Requirements
 
-- ✅ **Replaced copy buttons with official citation downloads**: Each result now shows clickable **BibTeX** and **RIS** download links from Stata Journal
-- ✅ **Removed `findsj_copy` subcommand**: Individual citation copying is no longer needed
-- ✅ **Streamlined code**: Reduced file size from 30,907 to 27,130 bytes (160+ lines removed)
-- ✅ **Retained batch export**: The `plain`, `markdown`, and `latex` export options remain fully functional
+- Stata 14.0 or later
+- Active internet connection (for DOI retrieval and citation downloads)
 
-### What Was Removed
+## Version History
 
-- ❌ Individual copy buttons (📋 Copy: plain | markdown | latex) per result
-- ❌ `findsj_copy` subcommand
-- ❌ Global macro saving for individual citations
+### Version 1.0.3 (2025-10-22)
+- Replaced copy buttons with official BibTeX/RIS download links
+- Removed `findsj_copy` subcommand
+- Added `getdoi` option for real-time DOI fetching
+- Improved performance by removing clipboard dependencies
+- Updated documentation and examples
 
-### What Was Added
+### Version 1.0.2 (2025-10-20)
+- Added three-button citation copy functionality
+- Improved error handling
 
-- ✅ Official BibTeX/RIS download links: **📚 Citation: BibTeX | RIS**
-- ✅ Automatic DOI retrieval when using export formats
-- ✅ Improved documentation with version history
+### Version 1.0.1 (2025-10-18)
+- Initial release with basic search and export features
 
-### Migration Guide
+## Troubleshooting
 
-**If you were using:**
+### Citations not downloading?
 
-```stata
-* OLD (no longer works):
-findsj panel data
-findsj_copy 1 markdown
-```
+- Ensure you have an active internet connection
+- Check that the DOI exists for the article
+- Try clicking the link again or use a different browser
 
-**Switch to:**
+### DOI retrieval slow?
 
-```stata
-* NEW (batch export):
-findsj panel data, n(5) markdown
-* Or click the BibTeX/RIS links in the output
-```
+- Use the `getdoi` option only when needed
+- The default DOI from the database is usually sufficient
+
+### Export not working?
+
+- Make sure you have at least one search result
+- Check that clipboard access is available
+- Try a different export format
+
+## Comparison with findit
+
+| Feature | findsj | findit |
+|---------|--------|--------|
+| Source | Stata Journal only | All Stata resources |
+| Citations | Yes (BibTeX/RIS) | No |
+| Batch Export | Yes | No |
+| Author Search | Yes | Limited |
+| Year Filter | Yes | No |
+| DOI Links | Yes | No |
+| Detailed Info | Yes | Basic |
+
+## Future Plans
+
+- [ ] Add abstract search functionality
+- [ ] Support for other citation formats (e.g., APA, Chicago)
+- [ ] Integration with reference managers
+- [ ] Offline mode with local database
+- [ ] Article recommendation based on keywords
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests on GitHub.
 
 ## Support
 
