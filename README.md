@@ -303,7 +303,7 @@ For questions, bug reports, or feature requests:
 If you use `findsj` in your research, please cite:
 
 ```
-Lian, Yujun (2025). findsj: Search and cite articles from Stata Journal.
+Lian, Yujun and Wan, Chucheng (2025). findsj: Search and cite articles from Stata Journal.
 Stata software package. Version 1.0.3.
 Available at: https://github.com/BlueDayDreeaming/findsj
 ```
@@ -312,14 +312,19 @@ Available at: https://github.com/BlueDayDreeaming/findsj
 
 MIT License - see [LICENSE](LICENSE) file for details
 
-Copyright (c) 2025 Yujun Lian
+Copyright (c) 2025 Yujun Lian, Chucheng Wan
 
 ## Author
 
 **Yujun Lian**  
 Sun Yat-sen University, Guangzhou, China  
-Email: arlionn@163.com  
-GitHub: [BlueDayDreeaming](https://github.com/BlueDayDreeaming)
+Email: arlionn@163.com
+
+**Chucheng Wan**  
+Sun Yat-sen University, Guangzhou, China  
+Email: chucheng.wan@outlook.com  
+GitHub: [BlueDayDreeaming](https://github.com/BlueDayDreeaming)  
+Gitee: [ChuChengWan](https://gitee.com/ChuChengWan)
 
 ---
 

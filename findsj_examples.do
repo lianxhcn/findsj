@@ -2,7 +2,7 @@
 * findsj_examples.do
 * Examples demonstrating all features of the findsj command
 * Version 1.0.3 (2025/10/22)
-* Author: Yujun Lian (arlionn@163.com)
+* Authors: Yujun Lian (arlionn@163.com), Chucheng Wan (chucheng.wan@outlook.com)
 ********************************************************************************
 
 capture log close

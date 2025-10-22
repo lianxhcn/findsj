@@ -303,7 +303,7 @@ findsj causal inference, author(Angrist) from(2000) detail
 如果您在研究中使用 `findsj`,请引用:
 
 ```
-连玉君 (2025). findsj: 搜索并引用 Stata Journal 文章.
+连玉君, 万储诚 (2025). findsj: 搜索并引用 Stata Journal 文章.
 Stata 软件包. 版本 1.0.3.
 可从以下网址获取: https://github.com/BlueDayDreeaming/findsj
 ```
@@ -312,14 +312,19 @@ Stata 软件包. 版本 1.0.3.
 
 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
 
-版权所有 (c) 2025 连玉君
+版权所有 (c) 2025 连玉君, 万储诚
 
 ## 作者
 
 **连玉君**  
 中山大学,广州,中国  
-邮箱: arlionn@163.com  
-GitHub: [BlueDayDreeaming](https://github.com/BlueDayDreeaming)
+邮箱: arlionn@163.com
+
+**万储诚**  
+中山大学,广州,中国  
+邮箱: chucheng.wan@outlook.com  
+GitHub: [BlueDayDreeaming](https://github.com/BlueDayDreeaming)  
+Gitee: [ChuChengWan](https://gitee.com/ChuChengWan)
 
 ---
 

@@ -1,5 +1,5 @@
 *! findsj version 1.0.3  2025/10/22
-*! Author: Yujun Lian (arlionn@163.com)
+*! Authors: Yujun Lian (arlionn@163.com), Chucheng Wan (chucheng.wan@outlook.com)
 *! Search Stata Journal and Stata Technical Bulletin articles
 
 cap program drop findsj
@@ -143,13 +143,31 @@ qui {
     keep if art_id != ""
     gen selected = 1
     local n_results = _N
-    noi dis as text "Found " as result `n_results' as text " article(s)."
-    
+}  // Temporarily exit qui block for user messages
+
+dis as text "Found " as result `n_results' as text " article(s)."
+
+qui {  // Resume qui block
     * Check for optional data file (provides DOI and page numbers)
     local fn_sj ""
     cap findsj_finddata
     if _rc == 0 local fn_sj `"`r(fn)'"'
-    
+}  // Temporarily exit qui block for download messages
+
+* If data file not found, try to download from GitHub or Gitee
+if `"`fn_sj'"' == "" {
+    dis as text "→ Data file not found. Attempting to download..."
+    cap findsj_download_data
+    if _rc == 0 {
+        local fn_sj `"`r(fn)'"'
+        dis as text "→ Data file downloaded successfully."
+    }
+    else {
+        dis as text "→ Could not download data file. Will fetch DOI in real-time if needed."
+    }
+}
+
+qui {  // Resume qui block
     * Use HTML-extracted data as primary source
     * Data file (if available) provides supplementary info (DOI, page numbers)
     gen volume = volume_html
@@ -796,9 +814,66 @@ qui{
 }  
 end 
 
-* Note: findsj_download_data has been removed
-* The program now extracts all necessary information from HTML directly
-* No external data file is required for basic functionality
-* 
-* For users who need DOI and page numbers, these can be extracted
-* in real-time using findsj_doi command for specific articles
+
+*===============================================================================
+* findsj_download_data: Download optional data file from GitHub or Gitee
+*===============================================================================
+program define findsj_download_data, rclass
+    version 14.0
+    
+    * Define URLs for the data file
+    local github_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/sjget_data_sj.dta"
+    local gitee_url "https://gitee.com/ChuChengWan/findsj/raw/main/sjget_data_sj.dta"
+    
+    * Determine download location (PERSONAL directory)
+    local download_path "`c(sysdir_personal)'"
+    
+    * Create directory if it doesn't exist
+    cap mkdir "`download_path'"
+    
+    local dest_file "`download_path'sjget_data_sj.dta"
+    
+    * Try GitHub first
+    noi dis as text "   Trying GitHub..."
+    cap copy "`github_url'" "`dest_file'", replace
+    
+    if _rc == 0 {
+        * Verify the file is valid
+        cap use "`dest_file'", clear
+        if _rc == 0 {
+            clear
+            return local fn "`dest_file'"
+            exit 0
+        }
+        else {
+            * File downloaded but invalid, try Gitee
+            noi dis as text "   GitHub file invalid, trying Gitee..."
+        }
+    }
+    else {
+        noi dis as text "   GitHub failed, trying Gitee..."
+    }
+    
+    * Try Gitee as fallback
+    cap copy "`gitee_url'" "`dest_file'", replace
+    
+    if _rc == 0 {
+        * Verify the file is valid
+        cap use "`dest_file'", clear
+        if _rc == 0 {
+            clear
+            return local fn "`dest_file'"
+            exit 0
+        }
+        else {
+            noi dis as error "   Downloaded file is invalid."
+            exit 198
+        }
+    }
+    else {
+        noi dis as error "   Both GitHub and Gitee download failed."
+        exit 631
+    }
+end
+
+

@@ -41,6 +41,7 @@ LaTeX, or plain text) with automatic clipboard support on Windows and Mac.
 Internet connection required. Stata 14.0 or higher required.
 
 Installation: net install findsj, from(https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/)
+Installation: net install findsj, from(https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/)
 
 GitHub: https://github.com/BlueDayDreeaming/findsj
-
+Gitee: https://gitee.com/ChuChengWan/findsj.git
