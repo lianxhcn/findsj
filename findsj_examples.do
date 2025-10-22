@@ -1,151 +1,88 @@
 ********************************************************************************
-* findsj Examples
-* Authors: Yujun Lian (arlionn@163.com), Chucheng Wan (chucheng.wan@outlook.com)
-* Affiliation: Sun Yat-sen University, Guangzhou, China
-* Date: 2025-10-18
-* Description: Examples demonstrating findsj command usage
+* findsj_examples.do
+* Examples demonstrating all features of the findsj command
+* Version 1.0.3 (2025/10/22)
+* Author: Yujun Lian (arlionn@163.com)
 ********************************************************************************
 
 capture log close
 log using "findsj_examples.log", replace text
 
-version 14
 clear all
 set more off
 
-********************************************************************************
-* Example 1: Basic keyword search
-********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "Example 1: Search articles by keyword"
-display as text "{hline 80}" _n
-
-* Search for articles about panel data
-findsj panel, n(3)
-
-* Store and display results
-return list
-
+dis _n(2) "{hline 80}"
+dis "FINDSJ EXAMPLES - Version 1.0.3"
+dis "Searching Stata Journal Articles"
+dis "{hline 80}" _n
 
 ********************************************************************************
-* Example 2: Search by author name
+* Example 1: Basic search
 ********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "Example 2: Search articles by author"
-display as text "{hline 80}" _n
-
-* Find articles by David Roodman
-findsj Roodman, author n(2)
-
-* Display returned values
-display as text _n "Number of results: " as result r(n_results)
-display as text "First article: " as result r(title_1)
-
+dis _n "{bf:Example 1: Basic search for 'panel data'}"
+findsj panel data
 
 ********************************************************************************
-* Example 3: Search by article title
+* Example 2: Limit number of results
 ********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "Example 3: Search articles by title"
-display as text "{hline 80}" _n
-
-* Search for synthetic control articles
-findsj synth, title n(2)
-
+dis _n(2) "{bf:Example 2: Show only top 10 results}"
+findsj panel data, n(10)
 
 ********************************************************************************
-* Example 4: Export citations in Markdown format
+* Example 3: Search in title only
 ********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "Example 4: Export citations in Markdown"
-display as text "{hline 80}" _n
-
-* Export in Markdown format (without clipboard for log clarity)
-findsj treatment, markdown n(2) noclip
-
+dis _n(2) "{bf:Example 3: Search 'panel data' in title only}"
+findsj panel data, title
 
 ********************************************************************************
-* Example 5: Export citations in LaTeX format
+* Example 4: Search by author
 ********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "Example 5: Export citations in LaTeX"
-display as text "{hline 80}" _n
-
-* Export in LaTeX format
-findsj regression, latex n(2) noclip
-
+dis _n(2) "{bf:Example 4: Search articles by author 'Baum'"
+findsj Baum, author
 
 ********************************************************************************
-* Example 6: Export in plain text format
+* Example 5: Get DOI information
 ********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "Example 6: Export in plain text"
-display as text "{hline 80}" _n
-
-* Plain text format (suitable for academic papers)
-findsj "difference in differences", plain n(2) noclip
-
+dis _n(2) "{bf:Example 5: Search with DOI information}"
+findsj panel data, n(5) getdoi
 
 ********************************************************************************
-* Example 7: Display more results
+* Example 6: Export citations (plain format to clipboard)
 ********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "Example 7: Display more results"
-display as text "{hline 80}" _n
-
-* Show 10 results
-findsj panel, n(10)
-
+dis _n(2) "{bf:Example 6: Export top 5 results in plain format}"
+findsj panel data, n(5) plain
 
 ********************************************************************************
-* Example 8: Display all results
+* Example 7: Export citations (markdown format to clipboard)
 ********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "Example 8: Display all results"
-display as text "{hline 80}" _n
-
-* Show all results for a specific search
-findsj xtabond, title allresults
-
+dis _n(2) "{bf:Example 7: Export top 5 results in markdown format}"
+findsj panel data, n(5) markdown
 
 ********************************************************************************
-* Example 9: Search without browser links
+* Example 8: Export citations (latex format to clipboard)
 ********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "Example 9: Search without browser links"
-display as text "{hline 80}" _n
-
-* Suppress browser links
-findsj instrumental, nobrowser n(2)
-
-
-********************************************************************************
-* Example 10: Comprehensive search with multiple options
-********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "Example 10: Comprehensive search"
-display as text "{hline 80}" _n
-
-* Search with markdown export, no clipboard, no package info
-findsj causality, markdown n(3) noclip nopkg
-
+dis _n(2) "{bf:Example 8: Export top 5 results in latex format}"
+findsj panel data, n(5) latex
 
 ********************************************************************************
 * Summary
 ********************************************************************************
-
-display as text _n(2) "{hline 80}"
-display as text "All examples completed successfully!"
-display as text "{hline 80}" _n
+dis _n(2) "{hline 80}"
+dis "EXAMPLES COMPLETED"
+dis "{hline 80}"
+dis _n "Available options:"
+dis "  - n(#)        : Limit number of results"
+dis "  - title       : Search in title only"
+dis "  - author      : Search by author name"
+dis "  - getdoi      : Retrieve DOI information (slower)"
+dis "  - plain       : Export citations in plain format"
+dis "  - markdown    : Export citations in markdown format"
+dis "  - latex       : Export citations in LaTeX format"
+dis _n "For each result, you can:"
+dis "  - Click BibTeX/RIS links to download citation files"
+dis "  - Click article links to view in browser"
+dis "{hline 80}" _n
 
 log close
+
+dis _n "{bf:Log file saved as: findsj_examples.log}"

@@ -1,3 +1,4 @@
 v 3
 d findsj package from https://github.com/BlueDayDreeaming/findsj
+d Version 1.0.3 (2025-10-22)
 p findsj Search and cite articles from Stata Journal

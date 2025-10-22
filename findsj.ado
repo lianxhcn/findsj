@@ -1,4 +1,4 @@
-*! findsj version 1.0.1  2025/10/18
+*! findsj version 1.0.3  2025/10/22
 *! Author: Yujun Lian (arlionn@163.com)
 *! Search Stata Journal and Stata Technical Bulletin articles
 
@@ -9,8 +9,9 @@ version 14
 syntax anything(name=keywords id="keywords") [, ///
     Author Title Keyword ///
     Markdown Latex TEX Plain  ///
-    NOCLIP NOBrowser NODOI NOPDF NOPkg ///
+    NOCLIP NOBrowser NOPDF NOPkg ///
     N(integer 5) ALLresults ///
+    GETDOI ///
     Clear Debug ///
     ]
 
@@ -44,6 +45,11 @@ local num_export = wordcount("`args_export'")
 if `num_export' > 1 {
     dis as error "Specify only one export format: markdown, latex, or plain"
     exit 198
+}
+
+* Auto-enable getdoi when export format is specified
+if `num_export' > 0 {
+    local getdoi "getdoi"
 }
 
 dis _n as text "{hline 60}"
@@ -96,12 +102,42 @@ qui {
     * Extract article information from HTML
     findsj_strget v, gen(art_id) begin(`"article="') end(`"">"')
     findsj_strget v, gen(title) begin(`"">"') end(`"</a></dt>"')
-    findsj_strget v, gen(author_raw) begin(`"<dd>"') end(`"</dd>"')
     
-    * Clean up extracted data
-    gen author = author_raw
+    * Extract author and year (first <dd> tag after <dt>)
+    gen author_year_raw = ""
+    gen n = _n
+    forvalues i = 1/`=_N' {
+        if art_id[`i'] != "" & `i' < _N {
+            if regexm(v[`i'+1], "<dd>(.+)</dd>") {
+                qui replace author_year_raw = regexs(1) in `i'
+            }
+        }
+    }
+    drop n
+    
+    * Extract volume and number from HTML (second <dd> tag)
+    gen volume_html = ""
+    gen number_html = ""
+    gen n = _n
+    forvalues i = 1/`=_N' {
+        if art_id[`i'] != "" & `i' < _N - 1 {
+            if regexm(v[`i'+2], "Volume ([0-9]+) Number ([0-9]+)") {
+                qui replace volume_html = regexs(1) in `i'
+                qui replace number_html = regexs(2) in `i'
+            }
+        }
+    }
+    drop n
+    
+    * Extract year from author_year_raw (format: "Author. Year.")
+    gen year_from_html = ""
+    replace year_from_html = regexs(1) if regexm(author_year_raw, "\.[ ]*([0-9]{4})\.[ ]*$")
+    
+    * Clean up extracted data - remove year from author string
+    gen author = regexr(author_year_raw, "\.[ ]*[0-9]{4}\.[ ]*$", ".")
+    replace author = strtrim(author)
     replace author = author[_n+1] if author == "" & author[_n+1] != ""
-    drop author_raw
+    drop author_year_raw
     
     drop v 
     keep if art_id != ""
@@ -109,36 +145,34 @@ qui {
     local n_results = _N
     noi dis as text "Found " as result `n_results' as text " article(s)."
     
+    * Check for optional data file (provides DOI and page numbers)
     local fn_sj ""
     cap findsj_finddata
     if _rc == 0 local fn_sj `"`r(fn)'"'
     
-    if `"`fn_sj'"' == "" {
-        noi dis as text ""
-        noi dis as text "{hline 60}"
-        noi dis as text "  Note: Data file not available"
-        noi dis as text "  The program will continue with basic search results."
-        noi dis as text "  Article IDs and links will still be displayed."
-        noi dis as text "{hline 60}"
-        noi dis as text ""
-    }
+    * Use HTML-extracted data as primary source
+    * Data file (if available) provides supplementary info (DOI, page numbers)
+    gen volume = volume_html
+    gen number = number_html
+    gen year = year_from_html
+    gen volnum_str = volume + "(" + number + ")" if volume != "" & volume != "."
+    gen volnum_url = volume + "-" + number if volume != "" & volume != "."
     
-    * If data file exists, merge with it
+    * Initialize optional fields
+    gen doi = ""
+    gen page = ""
+    gen volnum = real(volume + "." + number) if volume != "" & volume != "."
+    
+    * If data file exists, merge to get DOI and page numbers
+    local has_datafile = 0
     if `"`fn_sj'"' != "" {
         merge 1:1 art_id using `"`fn_sj'"', nogen keep(match master)
-    }
-    else {
-        * Create placeholder variables if data file not available
-        cap confirm variable volume
-        if _rc gen volume = ""
-        cap confirm variable number
-        if _rc gen number = ""
-        cap confirm variable doi
-        if _rc gen doi = ""
-        cap confirm variable page
-        if _rc gen page = ""
-        cap confirm variable volnum
-        if _rc gen volnum = .
+        * Data file provides DOI and page, but volume/number from HTML are preferred
+        replace doi = "" if doi == "."
+        replace page = "" if page == "."
+        * Check if data file has useful information
+        qui count if doi != "" | page != ""
+        if r(N) > 0 local has_datafile = 1
     }
     
     keep if selected == 1
@@ -171,32 +205,15 @@ qui {
         exit
     }
     
-    * Sort by volnum if available, otherwise keep original order
-    cap gsort -volnum
-    
     local url_base "https://www.stata-journal.com/article.html?article="
     gen url_html = "`url_base'" + art_id
     
     local url_pdf_base "https://journals.sagepub.com/doi/pdf/"
-    cap confirm variable doi
-    if _rc == 0 gen url_pdf = "`url_pdf_base'" + doi if doi != "" & doi != "."
+    gen url_pdf = "`url_pdf_base'" + doi if doi != "" & doi != "."
     
-    * Generate volume/number strings if variables exist
-    cap confirm variable volume
-    if _rc == 0 {
-        gen volnum_str = volume + "(" + number + ")"
-        gen volnum_url = volume + "-" + number
-        gen year = string(2000 + real(volume))
-    }
-    else {
-        gen volnum_str = ""
-        gen volnum_url = ""
-        gen year = ""
-    }
-    
-    cap confirm variable page
-    if _rc == 0 gen page_str = ": " + page if page != "" & page != "."
-    else gen page_str = ""
+    * Page string for display
+    gen page_str = ": " + page if page != "" & page != "."
+    replace page_str = "" if page_str == ": ."
     
     if "`markdown'" != "" {
         gen cite_text = author + " (" + year + "). " + title + ". " + ///
@@ -237,32 +254,86 @@ forvalues i = 1/`n' {
     local art_id_i  = art_id[`i']
     local url_html_i = url_html[`i']
     
+    * Clean HTML entities in title for display
+    local title_display = `"`title_i'"'
+    local title_display = subinstr(`"`title_display'"', "&amp;", "&", .)
+    local title_display = subinstr(`"`title_display'"', "&ndash;", "-", .)
+    local title_display = subinstr(`"`title_display'"', "&mdash;", "--", .)
+    local title_display = subinstr(`"`title_display'"', "&lt;", "<", .)
+    local title_display = subinstr(`"`title_display'"', "&gt;", ">", .)
+    local title_display = subinstr(`"`title_display'"', "&quot;", `"""', .)
+    
     dis as text "[" as result `i' as text "] " _c
     dis as result "`author_i'" as text " (" as result "`year_i'" as text "). "
-    dis as text "    " as result "`title_i'"
-    dis as text "    " as text "Stata Journal " as result "`volnum_i'" _c
+    dis as text "    " as result `"`title_display'"'
+    
+    * Display journal info with volume/number if available
+    dis as text "    " as text "_Stata Journal_" _c
+    if "`volnum_i'" != "" & "`volnum_i'" != "." {
+        dis as text " " as result "`volnum_i'" _c
+    }
     
     cap local page_i = page[`i']
-    if "`page_i'" != "" & "`page_i'" != "." dis as text ": " as result "`page_i'" _c
+    if "`page_i'" != "" & "`page_i'" != "." {
+        dis as text ": " as result "`page_i'" _c
+    }
     dis ""
     
-    if "`nobrowser'" == "" {
-        dis as text `"    {browse "`url_html_i'":Article page}"' _c
-        
-        cap local url_pdf_i = url_pdf[`i']
-        if "`nopdf'" == "" & "`url_pdf_i'" != "" & "`url_pdf_i'" != "." {
-            dis as text `" | {browse "`url_pdf_i'":PDF}"' _c
-        }
-        
-        if "`nodoi'" == "" {
-            cap local doi_i = doi[`i']
-            if "`doi_i'" != "" & "`doi_i'" != "." {
-                local doi_url "https://doi.org/`doi_i'"
-                dis as text `" | DOI: {browse "`doi_url'":`doi_i'}"' _c
+    * Get DOI and page info from data file or fetch real-time
+    cap local doi_i = doi[`i']
+    local has_doi = 0
+    if "`doi_i'" != "" & "`doi_i'" != "." {
+        local has_doi = 1
+    }
+    
+    * Fetch DOI only if getdoi option is specified (unless already in data file)
+    if `has_doi' == 0 & "`getdoi'" != "" {
+        qui {
+            cap findsj_doi `art_id_i'
+            if _rc == 0 {
+                local doi_i = r(doi)
+                local page_i = r(page)
+                if "`doi_i'" != "" & "`doi_i'" != "." {
+                    local has_doi = 1
+                }
             }
         }
-        dis ""
     }
+    
+    if "`nobrowser'" == "" {
+        dis as text "    " _c
+        dis as text `"{browse "`url_html_i'":Article page}"' _c
+        
+        * Display PDF link - use sjpdf.html (works without DOI)
+        if "`nopdf'" == "" {
+            local url_pdf_i "https://www.stata-journal.com/sjpdf.html?articlenum=`art_id_i'"
+            dis as text " | " _c
+            dis as text `"{browse "`url_pdf_i'":[PDF]}"' _c
+        }
+        
+        * Display Google Scholar link
+        local title_search = subinstr(`"`title_i'"', " ", "+", .)
+        local title_search = subinstr(`"`title_search'"', "&amp;", "%26", .)
+        local title_search = subinstr(`"`title_search'"', "&ndash;", "-", .)
+        local url_google "https://scholar.google.com/scholar?q=`title_search'"
+        dis as text " | " _c
+        dis as text `"{browse "`url_google'":[Google]}"'
+    }
+    
+    * Display DOI as plain text in a separate line (only if getdoi was used)
+    if "`getdoi'" != "" & `has_doi' == 1 {
+        dis as text "    DOI: " as result "`doi_i'"
+    }
+    
+    * Display citation download links (BibTeX and RIS)
+    local url_bibtex "https://www.stata-journal.com/ris.php?articlenum=`art_id_i'&abs=0&type=bibtex"
+    local url_ris "https://www.stata-journal.com/ris.php?articlenum=`art_id_i'&abs=0&type=ris"
+    dis as text _n "    📚 Citation: " _c
+    dis as text `"{browse "`url_bibtex'":BibTeX}"' _c
+    dis as text " | " _c
+    dis as text `"{browse "`url_ris'":RIS}"'
+    dis ""
+    
     
     if "`nopkg'" == "" {
         dis as text "    " `"{stata "search `art_id_i'":Search for package}"' _c
@@ -280,6 +351,9 @@ forvalues i = 1/`n' {
         dis ""
     }
 }
+
+* Save total number of displayed results
+global findsj_n_display `n_display'
 
 if `total_results' > `n_display' {
     dis _n as text "{hline 60}"
@@ -359,10 +433,13 @@ program define findsj_finddata, rclass
 version 14
    args fname 
    if `"`fname'"' == "" local fname = "sjget_data_sj.dta"	
-   cap noi findfile `"`fname'"', path(`".;`c(adopath)'"')
+   
+   * First priority: current directory and user's working directory
+   * Second priority: system adopath directories
+   cap findfile `"`fname'"', path(`".;`c(pwd)';`c(adopath)'"')
    if _rc {
-       dis as text "Data file not found. To install: {stata ssc install findsj, replace}"
-       exit
+       * Silently return error - caller will handle
+       exit 601
    }
    else{
        local fn_find `"`r(fn)'"'
@@ -719,25 +796,9 @@ qui{
 }  
 end 
 
-cap program drop findsj_download_data
-program define findsj_download_data
-version 14
-    qui {
-        * Download data file from GitHub
-        local data_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/sjget_data_sj.dta"
-        local save_path "`c(sysdir_plus)'s/sjget_data_sj.dta"
-        
-        * Create directory if it doesn't exist
-        cap mkdir "`c(sysdir_plus)'s"
-        
-        * Download the file
-        cap copy "`data_url'" "`save_path'", replace
-        if _rc {
-            noi dis as error "Failed to download data file from GitHub"
-            exit 601
-        }
-        else {
-            noi dis as text "Data file downloaded successfully to: `save_path'"
-        }
-    }
-end
+* Note: findsj_download_data has been removed
+* The program now extracts all necessary information from HTML directly
+* No external data file is required for basic functionality
+* 
+* For users who need DOI and page numbers, these can be extracted
+* in real-time using findsj_doi command for specific articles
