@@ -78,7 +78,7 @@ net install findsj, from(https://raw.githubusercontent.com/BlueDayDreeaming/find
 
 ```stata```stata
 
-net install findsj, from(https://gitee.com/jack2342022/findsj/raw/main/)net install findsj, from(https://gitee.com/jack2342022/findsj/raw/main/)
+net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/)net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/)
 
 ``````
 
@@ -101,150 +101,77 @@ net install findsj, from("path/to/directory")net install findsj, from("path/to/d
 ``````
 
 
+## Quick Start
 
-## Quick Start## Quick Start
+### Basic Search
 
+```stata
+findsj panel data
+```
 
-
-### Basic Search### Basic Search
-
-
-
-```stata```stata
-
-findsj panel datafindsj panel data
-
-``````
-
-
-
-This displays the first 5 articles matching "panel data" with:This displays the first 5 articles matching "panel data" with:
+This displays the first 5 articles matching "panel data" with:
 
 - Article title, authors, and journal information
-
-- Article title, authors, and journal information- Clickable links to article page and PDF
-
-- Clickable links to article page and PDF- **BibTeX and RIS download links** ( Citation: BibTeX | RIS)
-
-- **BibTeX and RIS download links** (📚 Citation: BibTeX | RIS)- Links to related Stata packages
-
-- Links to related Stata packages- Google Scholar search link
-
+- Clickable links to article page and PDF
+- **BibTeX and RIS download links** (📚 Citation: BibTeX | RIS)
+- Links to related Stata packages
 - Google Scholar search link
 
 ### Search by Author
 
-### Search by Author
-
 ```stata
-
-```statafindsj Baum, author
-
-findsj Baum, author```
-
+findsj Baum, author
 ```
 
 ### Search in Title Only
 
-### Search in Title Only
-
 ```stata
-
-```statafindsj panel data, title
-
-findsj panel data, title```
-
+findsj panel data, title
 ```
 
 ### Show More Results
 
-### Show More Results
-
 ```stata
-
-```statafindsj panel data, n(10)
-
-findsj panel data, n(10)```
-
+findsj panel data, n(10)
 ```
 
 ### Export Citations to Clipboard
 
-### Export Citations to Clipboard
-
 ```stata
-
-```stata* Export first 5 results in plain text format
-
-* Export first 5 results in plain text formatfindsj panel data, n(5) plain
-
+* Export first 5 results in plain text format
 findsj panel data, n(5) plain
 
 * Export first 5 results in Markdown format
-
-* Export first 5 results in Markdown formatfindsj panel data, n(5) markdown
-
 findsj panel data, n(5) markdown
 
 * Export first 5 results in LaTeX format
-
-* Export first 5 results in LaTeX formatfindsj panel data, n(5) latex
-
-findsj panel data, n(5) latex```
-
+findsj panel data, n(5) latex
 ```
 
 After running these commands, citations are automatically copied to your clipboard. You can paste them directly into your documents!
-
-After running these commands, citations are automatically copied to your clipboard. You can paste them directly into your documents!
-
-## Syntax
 
 ## Syntax
 
 ```stata
-
-```statafindsj keywords [, options]
-
-findsj keywords [, options]```
-
+findsj keywords [, options]
 ```
-
-### Options
 
 ### Options
 
 | Option | Description |
-
-| Option | Description ||--------|-------------|
-
-|--------|-------------|| **Search Scope** | |
-
-| **Search Scope** | || `author` | Search by author name |
-
-| `author` | Search by author name || `title` | Search by article title only |
-
-| `title` | Search by article title only || `keyword` | Search by keywords in full text (default) |
-
-| `keyword` | Search by keywords in full text (default) || **Export Format** | |
-
-| **Export Format** | || `plain` | Export citations in plain text format to clipboard |
-
-| `plain` | Export citations in plain text format to clipboard || `markdown` | Export citations in Markdown format to clipboard |
-
-| `markdown` | Export citations in Markdown format to clipboard || `latex` (or `tex`) | Export citations in LaTeX format to clipboard |
-
-| `latex` (or `tex`) | Export citations in LaTeX format to clipboard || **Display Options** | |
-
-| **Display Options** | || `n(#)` | Number of results to display/export (default: 5) |
-
-| `n(#)` | Number of results to display/export (default: 5) || `allresults` | Display and export all search results |
-
-| `allresults` | Display and export all search results || `getdoi` | Retrieve DOI information in real-time (slower) |
-
+|--------|-------------|
+| **Search Scope** | |
+| `author` | Search by author name |
+| `title` | Search by article title only |
+| `keyword` | Search by keywords in full text (default) |
+| **Export Format** | |
+| `plain` | Export citations in plain text format to clipboard |
+| `markdown` | Export citations in Markdown format to clipboard |
+| `latex` (or `tex`) | Export citations in LaTeX format to clipboard |
+| **Display Options** | |
+| `n(#)` | Number of results to display/export (default: 5) |
+| `allresults` | Display and export all search results |
 | `getdoi` | Retrieve DOI information in real-time (slower) |
-
-**Note**: When using export options (`plain`, `markdown`, or `latex`), DOI information is automatically retrieved.
 
 **Note**: When using export options (`plain`, `markdown`, or `latex`), DOI information is automatically retrieved.
 
@@ -528,7 +455,7 @@ For questions, bug reports, or feature requests:
 
 - **Email**: arlionn@163.com
 - **GitHub Issues**: https://github.com/BlueDayDreeaming/findsj/issues
-- **Gitee Issues**: https://gitee.com/jack2342022/findsj/issues
+- **Gitee Issues**: https://gitee.com/ChuChengWan/findsj/issues
 
 ## Citation
 
