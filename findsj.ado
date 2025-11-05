@@ -433,45 +433,45 @@ forvalues i = 1/`n' {
     }
     
     * Create download scripts (PowerShell for Windows, shell script for Mac/Unix)
+    * Create download scripts (PowerShell for Windows, shell script for Mac/Unix)
     quietly {
         tempname fh
         
         * Use configured download path (defined at program start)
-        * Use correct path separator for each OS
-        if "`c(os)'" == "Windows" {
-            local full_file_bib "`download_path'\`file_bib'"
-            local full_file_ris "`download_path'\`file_ris'"
-        }
-        else {
-            local full_file_bib "`download_path'/`file_bib'"
-            local full_file_ris "`download_path'/`file_ris'"
-        }
+        local full_file_bib "`download_path'/`file_bib'"
+        local full_file_ris "`download_path'/`file_ris'"
         
         if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
             * Shell script for BibTeX (Mac/Unix with curl)
+            * Escape special characters in file paths for shell
+            local full_file_bib_esc = subinstr("`full_file_bib'", `"""', `"\""', .)
+            local full_file_bib_esc = subinstr("`full_file_bib_esc'", "$", "\$", .)
+            local full_file_bib_esc = subinstr("`full_file_bib_esc'", "`", "\`", .)
+            
             file open `fh' using "`script_file_bib'", write replace
             file write `fh' "#!/bin/bash" _n
             file write `fh' "# -*- coding: utf-8 -*-" _n
             file write `fh' "" _n
-            file write `fh' "OUTPUT_FILE=" `"""' "`full_file_bib'" `"""' _n
+            file write `fh' "OUTPUT_FILE=" `"""' "`full_file_bib_esc'" `"""' _n
             file write `fh' "" _n
-            file write `fh' "# Download file" _n
+            file write `fh' "# Download file with proper encoding handling" _n
             file write `fh' "curl -sSL -H 'Referer: `url_article'' \\" _n
             file write `fh' "     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \\" _n
-            file write `fh' "     -o " `"""' "$" "OUTPUT_FILE" `"""' " \\" _n
-            file write `fh' "     '`url_bibtex''" _n
+            file write `fh' "     -H 'Accept-Charset: UTF-8' \\" _n
+            file write `fh' "     -o " `"""' "$" "{OUTPUT_FILE}" `"""' " \\" _n
+            file write `fh' `"     "`url_bibtex'" 2>&1"' _n
             file write `fh' "" _n
             file write `fh' "# Check if download succeeded" _n
-            file write `fh' "if [ -f " `"""' "$" "OUTPUT_FILE" `"""' " ] && [ -s " `"""' "$" "OUTPUT_FILE" `"""' " ]; then" _n
-            file write `fh' "    echo " `"""' "Downloaded: $" "OUTPUT_FILE" `"""' _n
-            file write `fh' "    # Try to remove UTF-8 BOM if present" _n
+            file write `fh' "if [ -f " `"""' "$" "{OUTPUT_FILE}" `"""' " ] && [ -s " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
+            file write `fh' "    echo " `"""' "Downloaded successfully: $" "{OUTPUT_FILE}" `"""' _n
+            file write `fh' "    # Try to remove BOM if present (UTF-8 BOM can cause display issues)" _n
             file write `fh' "    if command -v sed > /dev/null 2>&1; then" _n
-            file write `fh' "        sed -i '' '1s/^\xEF\xBB\xBF//' " `"""' "$" "OUTPUT_FILE" `"""' " 2>/dev/null || true" _n
+            file write `fh' "        sed -i '' '1s/^\xEF\xBB\xBF//' " `"""' "$" "{OUTPUT_FILE}" `"""' " 2>/dev/null || true" _n
             file write `fh' "    fi" _n
-            file write `fh' "    # Open the file" _n
-            file write `fh' "    open " `"""' "$" "OUTPUT_FILE" `"""' _n
+            file write `fh' "    # Open file with default application" _n
+            file write `fh' "    open " `"""' "$" "{OUTPUT_FILE}" `"""' " 2>&1" _n
             file write `fh' "else" _n
-            file write `fh' "    echo " `"""' "Error: Download failed" `"""' " >&2" _n
+            file write `fh' "    echo " `"""' "Error: Download failed or file is empty" `"""' " >&2" _n
             file write `fh' "    exit 1" _n
             file write `fh' "fi" _n
             file close `fh'
@@ -480,29 +480,35 @@ forvalues i = 1/`n' {
             quietly shell chmod +x "`script_file_bib'" > /dev/null 2>&1
             
             * Shell script for RIS (Mac/Unix with curl)
+            * Escape special characters in file paths for shell
+            local full_file_ris_esc = subinstr("`full_file_ris'", `"""', `"\""', .)
+            local full_file_ris_esc = subinstr("`full_file_ris_esc'", "$", "\$", .)
+            local full_file_ris_esc = subinstr("`full_file_ris_esc'", "`", "\`", .)
+            
             file open `fh' using "`script_file_ris'", write replace
             file write `fh' "#!/bin/bash" _n
             file write `fh' "# -*- coding: utf-8 -*-" _n
             file write `fh' "" _n
-            file write `fh' "OUTPUT_FILE=" `"""' "`full_file_ris'" `"""' _n
+            file write `fh' "OUTPUT_FILE=" `"""' "`full_file_ris_esc'" `"""' _n
             file write `fh' "" _n
-            file write `fh' "# Download file" _n
+            file write `fh' "# Download file with proper encoding handling" _n
             file write `fh' "curl -sSL -H 'Referer: `url_article'' \\" _n
             file write `fh' "     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \\" _n
-            file write `fh' "     -o " `"""' "$" "OUTPUT_FILE" `"""' " \\" _n
-            file write `fh' "     '`url_ris''" _n
+            file write `fh' "     -H 'Accept-Charset: UTF-8' \\" _n
+            file write `fh' "     -o " `"""' "$" "{OUTPUT_FILE}" `"""' " \\" _n
+            file write `fh' `"     "`url_ris'" 2>&1"' _n
             file write `fh' "" _n
             file write `fh' "# Check if download succeeded" _n
-            file write `fh' "if [ -f " `"""' "$" "OUTPUT_FILE" `"""' " ] && [ -s " `"""' "$" "OUTPUT_FILE" `"""' " ]; then" _n
-            file write `fh' "    echo " `"""' "Downloaded: $" "OUTPUT_FILE" `"""' _n
-            file write `fh' "    # Try to remove UTF-8 BOM if present" _n
+            file write `fh' "if [ -f " `"""' "$" "{OUTPUT_FILE}" `"""' " ] && [ -s " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
+            file write `fh' "    echo " `"""' "Downloaded successfully: $" "{OUTPUT_FILE}" `"""' _n
+            file write `fh' "    # Try to remove BOM if present (UTF-8 BOM can cause display issues)" _n
             file write `fh' "    if command -v sed > /dev/null 2>&1; then" _n
-            file write `fh' "        sed -i '' '1s/^\xEF\xBB\xBF//' " `"""' "$" "OUTPUT_FILE" `"""' " 2>/dev/null || true" _n
+            file write `fh' "        sed -i '' '1s/^\xEF\xBB\xBF//' " `"""' "$" "{OUTPUT_FILE}" `"""' " 2>/dev/null || true" _n
             file write `fh' "    fi" _n
-            file write `fh' "    # Open the file" _n
-            file write `fh' "    open " `"""' "$" "OUTPUT_FILE" `"""' _n
+            file write `fh' "    # Open file with default application" _n
+            file write `fh' "    open " `"""' "$" "{OUTPUT_FILE}" `"""' " 2>&1" _n
             file write `fh' "else" _n
-            file write `fh' "    echo " `"""' "Error: Download failed" `"""' " >&2" _n
+            file write `fh' "    echo " `"""' "Error: Download failed or file is empty" `"""' " >&2" _n
             file write `fh' "    exit 1" _n
             file write `fh' "fi" _n
             file close `fh'
