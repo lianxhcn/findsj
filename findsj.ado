@@ -1,6 +1,7 @@
-*! findsj version 1.0.4  2025/11/05
+*! findsj version 1.1.0  2025/11/05
 *! Authors: Yujun Lian (arlionn@163.com), Chucheng Wan (chucheng.wan@outlook.com)
 *! Search Stata Journal and Stata Technical Bulletin articles
+*! v1.1.0: Removed local data file dependency, all info fetched online
 
 cap program drop findsj
 program define findsj, rclass
@@ -222,50 +223,17 @@ qui {
 dis as text "Found " as result `n_results' as text " article(s)."
 
 qui {  // Resume qui block
-    * Check for optional data file (provides DOI and page numbers)
-    local fn_sj ""
-    cap findsj_finddata
-    if _rc == 0 local fn_sj `"`r(fn)'"'
-}  // Temporarily exit qui block for download messages
-
-* If data file not found, try to download from GitHub or Gitee
-if `"`fn_sj'"' == "" {
-    dis as text "→ Data file not found. Attempting to download..."
-    cap findsj_download_data
-    if _rc == 0 {
-        local fn_sj `"`r(fn)'"'
-        dis as text "→ Data file downloaded successfully."
-    }
-    else {
-        dis as text "→ Could not download data file. Will fetch DOI in real-time if needed."
-    }
-}
-
-qui {  // Resume qui block
     * Use HTML-extracted data as primary source
-    * Data file (if available) provides supplementary info (DOI, page numbers)
     gen volume = volume_html
     gen number = number_html
     gen year = year_from_html
     gen volnum_str = volume + "(" + number + ")" if volume != "" & volume != "."
     gen volnum_url = volume + "-" + number if volume != "" & volume != "."
     
-    * Initialize optional fields
-    gen doi = ""
-    gen page = ""
+    * Initialize optional fields (will be fetched on-demand if getdoi is specified)
+    gen doi = "."
+    gen page = "."
     gen volnum = real(volume + "." + number) if volume != "" & volume != "."
-    
-    * If data file exists, merge to get DOI and page numbers
-    local has_datafile = 0
-    if `"`fn_sj'"' != "" {
-        merge 1:1 art_id using `"`fn_sj'"', nogen keep(match master)
-        * Data file provides DOI and page, but volume/number from HTML are preferred
-        replace doi = "" if doi == "."
-        replace page = "" if page == "."
-        * Check if data file has useful information
-        qui count if doi != "" | page != ""
-        if r(N) > 0 local has_datafile = 1
-    }
     
     keep if selected == 1
     
@@ -661,43 +629,6 @@ version 14
   if r(N) == 0 dis `"Note: nothing matched. Try different patterns."'
 end   
 
-cap program drop findsj_finddata
-program define findsj_finddata, rclass
-version 14
-   args fname 
-   if `"`fname'"' == "" local fname = "sjget_data_sj.dta"	
-   
-   * First priority: current directory and user's working directory
-   * Second priority: system adopath directories
-   cap findfile `"`fname'"', path(`".;`c(pwd)';`c(adopath)'"')
-   if _rc {
-       * Silently return error - caller will handle
-       exit 601
-   }
-   else{
-       local fn_find `"`r(fn)'"'
-       preserve 
-       qui use `"`fn_find'"', clear 
-       qui cap destring volume number, gen(vol_int num_int)
-       if _rc == 0 {
-           gsort -vol_int -num_int
-           local vol = volume[1]
-           local num = number[1]
-           local volnum_loc = `vol'.`num'
-       }
-       else {
-           local vol = volume[1]
-           local num = number[1]
-           local volnum_loc = 0
-       }
-       restore 
-       return local fn = `"`fn_find'"'
-       return scalar vol = `vol'
-       return scalar num = `num'
-       return scalar vn = `volnum_loc'		
-   }
-end 
-
 cap program drop findsj_current
 program define findsj_current, rclass
 version 14
@@ -912,6 +843,9 @@ end
 cap program drop findsj_add_data
 program define findsj_add_data, rclass
 version 14
+dis as error "Note: findsj_add_data is deprecated. Local data file support has been removed."
+dis as text "DOI and page information are now fetched in real-time when using the 'getdoi' option."
+exit 199
 syntax, From(string) 
   tempfile sj_tempdata 
   local vn_local = "`from'"
@@ -928,9 +862,6 @@ syntax, From(string)
   	qui replace page = r(page) in `i'
   	if mod(`i',3)==0 dis _c "." 	
   } 
-  qui findsj_finddata
-  local fn `"`r(fn)'"'
-  qui append using `"`fn'"'
   qui duplicates drop doi, force 
   qui format title author doi %-20s
   qui format volume number %4s
@@ -1027,68 +958,6 @@ qui{
   else replace `varlist' = `var'`suffix'
   drop `var'_wordcount `var'_rev* `var'_Last  `var'_rest  `var'`suffix'  
 }  
-end 
-
-
-*===============================================================================
-* findsj_download_data: Download optional data file from GitHub or Gitee
-*===============================================================================
-program define findsj_download_data, rclass
-    version 14.0
-    
-    * Define URLs for the data file
-    local github_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/sjget_data_sj.dta"
-    local gitee_url "https://gitee.com/ChuChengWan/findsj/raw/main/sjget_data_sj.dta"
-    
-    * Determine download location (PERSONAL directory)
-    local download_path "`c(sysdir_personal)'"
-    
-    * Create directory if it doesn't exist
-    cap mkdir "`download_path'"
-    
-    local dest_file "`download_path'sjget_data_sj.dta"
-    
-    * Try GitHub first
-    noi dis as text "   Trying GitHub..."
-    cap copy "`github_url'" "`dest_file'", replace
-    
-    if _rc == 0 {
-        * Verify the file is valid
-        cap use "`dest_file'", clear
-        if _rc == 0 {
-            clear
-            return local fn "`dest_file'"
-            exit 0
-        }
-        else {
-            * File downloaded but invalid, try Gitee
-            noi dis as text "   GitHub file invalid, trying Gitee..."
-        }
-    }
-    else {
-        noi dis as text "   GitHub failed, trying Gitee..."
-    }
-    
-    * Try Gitee as fallback
-    cap copy "`gitee_url'" "`dest_file'", replace
-    
-    if _rc == 0 {
-        * Verify the file is valid
-        cap use "`dest_file'", clear
-        if _rc == 0 {
-            clear
-            return local fn "`dest_file'"
-            exit 0
-        }
-        else {
-            noi dis as error "   Downloaded file is invalid."
-            exit 198
-        }
-    }
-    else {
-        noi dis as error "   Both GitHub and Gitee download failed."
-        exit 631
-    }
 end
 
 
