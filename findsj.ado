@@ -477,17 +477,26 @@ forvalues i = 1/`n' {
             file open `fh' using "`script_file_ris'", write replace
             file write `fh' "#!/bin/bash" _n
             file write `fh' "OUTPUT_FILE=" `"""' "`full_file_ris_esc'" `"""' _n
-            file write `fh' "curl -sSL -H 'Referer: `url_article'' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' -o " `"""' "$" "{OUTPUT_FILE}" `"""' " '`url_ris'' > /dev/null 2>&1" _n
-            file write `fh' "if [ -f " `"""' "$" "{OUTPUT_FILE}" `"""' " ] && [ -s " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
-            file write `fh' "    echo " `"""' "Downloaded: $" "{OUTPUT_FILE}" `"""' _n
-            file write `fh' "    echo " `"""' "" `"""' _n
-            file write `fh' "    echo " `"""' "To change future download path:" `"""' _n
-            file write `fh' "    echo " `"""' "  findsj, setpath(/your/path)  -- Set new path" `"""' _n
-            file write `fh' "    echo " `"""' "  findsj, querypath              -- Check current path" `"""' _n
-            file write `fh' "    echo " `"""' "  findsj, resetpath              -- Reset to default" `"""' _n
-            file write `fh' "    open " `"""' "$" "{OUTPUT_FILE}" `"""' " > /dev/null 2>&1" _n
+            file write `fh' "echo " `"""' "Downloading RIS from: `url_ris'" `"""' _n
+            file write `fh' "curl -sSL -H 'Referer: `url_article'' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' -o " `"""' "$" "{OUTPUT_FILE}" `"""' " '`url_ris''" _n
+            file write `fh' "echo " `"""' "Curl exit code: $" "?" `"""' _n
+            file write `fh' "if [ -f " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
+            file write `fh' "    FILE_SIZE=" `"""' "$(wc -c < " `"""' "$" "{OUTPUT_FILE}" `"""' ")" `"""' _n
+            file write `fh' "    echo " `"""' "File exists, size: $" "{FILE_SIZE} bytes" `"""' _n
+            file write `fh' "    if [ -s " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
+            file write `fh' "        echo " `"""' "Downloaded: $" "{OUTPUT_FILE}" `"""' _n
+            file write `fh' "        echo " `"""' "" `"""' _n
+            file write `fh' "        echo " `"""' "To change future download path:" `"""' _n
+            file write `fh' "        echo " `"""' "  findsj, setpath(/your/path)  -- Set new path" `"""' _n
+            file write `fh' "        echo " `"""' "  findsj, querypath              -- Check current path" `"""' _n
+            file write `fh' "        echo " `"""' "  findsj, resetpath              -- Reset to default" `"""' _n
+            file write `fh' "        open " `"""' "$" "{OUTPUT_FILE}" `"""' " > /dev/null 2>&1" _n
+            file write `fh' "    else" _n
+            file write `fh' "        echo " `"""' "Download failed: file is empty" `"""' " >&2" _n
+            file write `fh' "    fi" _n
             file write `fh' "else" _n
-            file write `fh' "    echo " `"""' "Download failed" `"""' " >&2" _n
+            file write `fh' "    echo " `"""' "Download failed: file not created" `"""' " >&2" _n
+            file write `fh' "fi" _n
             file write `fh' "fi" _n
             file close `fh'
             
