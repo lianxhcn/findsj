@@ -445,50 +445,34 @@ forvalues i = 1/`n' {
             * Shell script for BibTeX (Mac/Unix with curl)
             file open `fh' using "`script_file_bib'", write replace
             file write `fh' "#!/bin/bash" _n
-            file write `fh' "# Silent download - suppress all curl output" _n
             file write `fh' "curl -sSL -H 'Referer: `url_article'' \" _n
             file write `fh' "     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \" _n
             file write `fh' "     -o '`full_file_bib'' \" _n
-            file write `fh' "     '`url_bibtex'' 2>&1 | grep -v '^'" _n
-            file write `fh' "# Check download result and display message" _n
+            file write `fh' "     '`url_bibtex'' > /dev/null 2>&1" _n
             file write `fh' "if [ -f '`full_file_bib'' ] && [ -s '`full_file_bib'' ]; then" _n
-            file write `fh' `"    printf "\nDownloaded: `full_file_bib'\n""' _n
-            file write `fh' `"    printf "\nTo change future download path:\n""' _n
-            file write `fh' `"    printf "  findsj, setpath(/your/path)  -- Set new path\n""' _n
-            file write `fh' `"    printf "  findsj, querypath              -- Check current path\n""' _n
-            file write `fh' `"    printf "  findsj, resetpath              -- Reset to default\n""' _n
-            file write `fh' "    open '`full_file_bib'' 2>/dev/null" _n
-            file write `fh' "else" _n
-            file write `fh' `"    printf "\nDownload failed!\n""' _n
+            file write `fh' "    echo '`full_file_bib''" _n
+            file write `fh' "    open '`full_file_bib'' > /dev/null 2>&1" _n
             file write `fh' "fi" _n
             file close `fh'
             
             * Make script executable
-            quietly shell chmod +x "`script_file_bib'" 2>/dev/null
+            quietly shell chmod +x "`script_file_bib'" > /dev/null 2>&1
             
             * Shell script for RIS (Mac/Unix with curl)
             file open `fh' using "`script_file_ris'", write replace
             file write `fh' "#!/bin/bash" _n
-            file write `fh' "# Silent download - suppress all curl output" _n
             file write `fh' "curl -sSL -H 'Referer: `url_article'' \" _n
             file write `fh' "     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \" _n
             file write `fh' "     -o '`full_file_ris'' \" _n
-            file write `fh' "     '`url_ris'' 2>&1 | grep -v '^'" _n
-            file write `fh' "# Check download result and display message" _n
+            file write `fh' "     '`url_ris'' > /dev/null 2>&1" _n
             file write `fh' "if [ -f '`full_file_ris'' ] && [ -s '`full_file_ris'' ]; then" _n
-            file write `fh' `"    printf "\nDownloaded: `full_file_ris'\n""' _n
-            file write `fh' `"    printf "\nTo change future download path:\n""' _n
-            file write `fh' `"    printf "  findsj, setpath(/your/path)  -- Set new path\n""' _n
-            file write `fh' `"    printf "  findsj, querypath              -- Check current path\n""' _n
-            file write `fh' `"    printf "  findsj, resetpath              -- Reset to default\n""' _n
-            file write `fh' "    open '`full_file_ris'' 2>/dev/null" _n
-            file write `fh' "else" _n
-            file write `fh' `"    printf "\nDownload failed!\n""' _n
+            file write `fh' "    echo '`full_file_ris''" _n
+            file write `fh' "    open '`full_file_ris'' > /dev/null 2>&1" _n
             file write `fh' "fi" _n
             file close `fh'
             
             * Make script executable
-            quietly shell chmod +x "`script_file_ris'" 2>/dev/null
+            quietly shell chmod +x "`script_file_ris'" > /dev/null 2>&1
         }
         else {
             * PowerShell script for BibTeX (Windows)
