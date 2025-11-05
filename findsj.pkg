@@ -1,11 +1,21 @@
 v 3
 d findsj: Search and cite articles from Stata Journal
 d
-d Distribution-Date: 20251022
+d Version 1.1.0 - Real-time search with cross-platform citation downloads
+d
+d All article information is fetched directly from the Stata Journal
+d website in real-time. No local data files required. Supports Windows,
+d Mac, and Linux with native BibTeX/RIS downloads. Configurable download
+d path persistent across sessions.
+d
+d Distribution-Date: 20251105
 d License: MIT
 d
-d Author: Yujun Lian
-d Support: email arlionn@163.com
+d Author: Yujun Lian, Sun Yat-sen University
+d Author: Chucheng Wan, Sun Yat-sen University
+d Support: email arlionn@163.com, chucheng.wan@outlook.com
+d
+d Requires: Stata version 14.0 or higher
 d
 f findsj.ado
 f findsj.sthlp
