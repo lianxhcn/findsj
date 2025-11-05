@@ -1,4 +1,4 @@
-*! findsj version 1.0.3  2025/10/22
+*! findsj version 1.0.4  2025/11/05
 *! Authors: Yujun Lian (arlionn@163.com), Chucheng Wan (chucheng.wan@outlook.com)
 *! Search Stata Journal and Stata Technical Bulletin articles
 
@@ -6,17 +6,91 @@ cap program drop findsj
 program define findsj, rclass
 version 14
 
-syntax anything(name=keywords id="keywords") [, ///
+syntax [anything(name=keywords id="keywords")] [, ///
     Author Title Keyword ///
     Markdown Latex TEX Plain  ///
     NOCLIP NOBrowser NOPDF NOPkg ///
-    N(integer 5) ALLresults ///
+    N(integer 10) ALLresults ///
     GETDOI ///
     Clear Debug ///
+    SETPath(string) QUERYpath RESETpath ///
     ]
+
+* Handle download path configuration subcommands
+if "`querypath'" != "" | "`resetpath'" != "" | "`setpath'" != "" {
+    local config_file "`c(sysdir_personal)'findsj_config.txt"
+    
+    * Query current path
+    if "`querypath'" != "" {
+        capture confirm file "`config_file'"
+        if _rc == 0 {
+            tempname fh
+            file open `fh' using "`config_file'", read text
+            file read `fh' line
+            file close `fh'
+            local saved_path = strtrim("`line'")
+            if "`saved_path'" != "" {
+                dis as result "Current download path: " as text "`saved_path'"
+            }
+            else {
+                dis as result "Current download path: " as text "`c(pwd)'" as text " (default)"
+            }
+        }
+        else {
+            dis as result "Current download path: " as text "`c(pwd)'" as text " (default)"
+        }
+        exit
+    }
+    
+    * Reset to default
+    if "`resetpath'" != "" {
+        capture erase "`config_file'"
+        dis as result "Download path reset to default (current working directory)"
+        dis as text "Use " as result "findsj ..., setpath(path)" as text " to set a custom download path"
+        exit
+    }
+    
+    * Set new path
+    if "`setpath'" != "" {
+        * Try to change to the directory as validation
+        local current_dir = c(pwd)
+        quietly capture cd "`setpath'"
+        if _rc != 0 {
+            dis as error "Directory does not exist: `setpath'"
+            exit 601
+        }
+        quietly cd "`current_dir'"
+        
+        * Save path to config file
+        tempname fh
+        file open `fh' using "`config_file'", write replace
+        file write `fh' "`setpath'"
+        file close `fh'
+        
+        dis as result "Download path set to: " as text "`setpath'"
+        dis as text "This setting will be remembered for future sessions."
+        exit
+    }
+}
 
 if "`debug'" != "" set trace on
 if "`tex'" != "" local latex "latex"
+
+* Read download path from config file
+local config_file "`c(sysdir_personal)'findsj_config.txt"
+local download_path ""
+capture confirm file "`config_file'"
+if _rc == 0 {
+    tempname fh
+    file open `fh' using "`config_file'", read text
+    file read `fh' line
+    file close `fh'
+    local download_path = strtrim("`line'")
+}
+* Use current directory as default if no config or empty config
+if "`download_path'" == "" {
+    local download_path "`c(pwd)'"
+}
 
 local keywords = strtrim(`"`keywords'"')   
 local keywords = stritrim(`"`keywords'"')
@@ -263,6 +337,10 @@ dis _n as text "{hline 60}"
 dis as text "  Search Results (Showing `n_display' of `total_results')"
 dis as text "{hline 60}" _n
 
+* Save and increase line size to prevent wrapping
+local old_linesize = c(linesize)
+quietly set linesize 255
+
 local n = `n_display'
 forvalues i = 1/`n' {
     local volnum_i  = volnum_str[`i']
@@ -281,12 +359,12 @@ forvalues i = 1/`n' {
     local title_display = subinstr(`"`title_display'"', "&gt;", ">", .)
     local title_display = subinstr(`"`title_display'"', "&quot;", `"""', .)
     
-    dis as text "[" as result `i' as text "] " _c
-    dis as result "`author_i'" as text " (" as result "`year_i'" as text "). "
-    dis as text "    " as result `"`title_display'"'
+    * First line: Article number and title (use smcl to prevent wrapping)
+    dis as text "{p 0 0 0}[" as result `i' as text "] " as result `"`title_display'"' as text "{p_end}"
     
-    * Display journal info with volume/number if available
-    dis as text "    " as text "_Stata Journal_" _c
+    * Second line: Author, year, and journal info
+    dis as text "{p 4 4 4}" as result "`author_i'" as text " (" as result "`year_i'" as text "). " ///
+        as text "_Stata Journal_" _c
     if "`volnum_i'" != "" & "`volnum_i'" != "." {
         dis as text " " as result "`volnum_i'" _c
     }
@@ -295,7 +373,7 @@ forvalues i = 1/`n' {
     if "`page_i'" != "" & "`page_i'" != "." {
         dis as text ": " as result "`page_i'" _c
     }
-    dis ""
+    dis as text "{p_end}"
     
     * Get DOI and page info from data file or fetch real-time
     cap local doi_i = doi[`i']
@@ -335,40 +413,177 @@ forvalues i = 1/`n' {
         local title_search = subinstr(`"`title_search'"', "&ndash;", "-", .)
         local url_google "https://scholar.google.com/scholar?q=`title_search'"
         dis as text " | " _c
-        dis as text `"{browse "`url_google'":[Google]}"'
+        dis as text `"{browse "`url_google'":[Google]}"' _c
+        
+        * Add package search and software links on same line
+        if "`nopkg'" == "" {
+            dis as text " | " _c
+            dis as text `"{stata "search `art_id_i'":Search package}"' _c
+            * Only show Browse SJ software link if volume/number info is available
+            cap local volnum_url_i = volnum_url[`i']
+            cap local volume_i = volume[`i']
+            if _rc == 0 & "`volume_i'" != "" & "`volume_i'" != "." {
+                dis as text " | " _c
+                dis as text `"{stata "net from http://www.stata-journal.com/software/sj`volnum_url_i'":Browse software}"' _c
+            }
+        }
+        
+        * Continue on same line - no line break yet
     }
     
     * Display DOI as plain text in a separate line (only if getdoi was used)
     if "`getdoi'" != "" & `has_doi' == 1 {
+        dis ""  // End the button line first
         dis as text "    DOI: " as result "`doi_i'"
     }
     
     * Display citation download links (BibTeX and RIS)
-    local url_bibtex "https://www.stata-journal.com/ris.php?articlenum=`art_id_i'&abs=0&type=bibtex"
-    local url_ris "https://www.stata-journal.com/ris.php?articlenum=`art_id_i'&abs=0&type=ris"
-    dis as text _n "    📚 Citation: " _c
-    dis as text `"{browse "`url_bibtex'":BibTeX}"' _c
-    dis as text " | " _c
-    dis as text `"{browse "`url_ris'":RIS}"'
-    dis ""
+    local url_article "https://www.stata-journal.com/article.html?article=`art_id_i'"
+    local url_bibtex "https://www.stata-journal.com/ris.php?articlenum=`art_id_i'&abs=1&type=bibtex"
+    local url_ris "https://www.stata-journal.com/ris.php?articlenum=`art_id_i'&abs=1&type=ris"
+    local file_bib "`art_id_i'.bib"
+    local file_ris "`art_id_i'.ris"
     
-    
-    if "`nopkg'" == "" {
-        dis as text "    " `"{stata "search `art_id_i'":Search for package}"' _c
-        * Only show Browse SJ software link if volume/number info is available
-        cap local volnum_url_i = volnum_url[`i']
-        cap local volume_i = volume[`i']
-        if _rc == 0 & "`volume_i'" != "" & "`volume_i'" != "." {
-            dis as text " | " `"{stata "net from http://www.stata-journal.com/software/sj`volnum_url_i'":Browse SJ software}"'
-        }
-        else {
-            dis ""
-        }
+    * Detect OS and set appropriate script extension
+    if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
+        local script_ext "sh"
+        local script_file_bib "_download_`art_id_i'_bib.sh"
+        local script_file_ris "_download_`art_id_i'_ris.sh"
     }
     else {
-        dis ""
+        local script_ext "ps1"
+        local script_file_bib "_download_`art_id_i'_bib.ps1"
+        local script_file_ris "_download_`art_id_i'_ris.ps1"
     }
+    
+    if "`debug'" != "" {
+        noi dis as text "DEBUG: art_id_i = `art_id_i'"
+        noi dis as text "DEBUG: url_article = `url_article'"
+        noi dis as text "DEBUG: url_bibtex = `url_bibtex'"
+        noi dis as text "DEBUG: url_ris = `url_ris'"
+        noi dis as text "DEBUG: OS = `c(os)', script_ext = `script_ext'"
+    }
+    
+    * Create download scripts (PowerShell for Windows, shell script for Mac/Unix)
+    * Create download scripts (PowerShell for Windows, shell script for Mac/Unix)
+    quietly {
+        tempname fh
+        
+        * Use configured download path (defined at program start)
+        local full_file_bib "`download_path'/`file_bib'"
+        local full_file_ris "`download_path'/`file_ris'"
+        
+        if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
+            * Shell script for BibTeX (Mac/Unix with curl)
+            file open `fh' using "`script_file_bib'", write replace
+            file write `fh' "#!/bin/bash" _n
+            file write `fh' "curl -H 'Referer: `url_article'' \" _n
+            file write `fh' "     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \" _n
+            file write `fh' "     -o '`full_file_bib'' \" _n
+            file write `fh' "     '`url_bibtex''" _n
+            file write `fh' "if [ -f '`full_file_bib'' ]; then" _n
+            file write `fh' `"    echo -e "\033[32mDownloaded: `full_file_bib'\033[0m""' _n
+            file write `fh' `"    echo """' _n
+            file write `fh' `"    echo -e "\033[36mTo change future download path:\033[0m""' _n
+            file write `fh' `"    echo -e "\033[33m  findsj, setpath(/your/path)  -- Set new path\033[0m""' _n
+            file write `fh' `"    echo -e "\033[33m  findsj, querypath              -- Check current path\033[0m""' _n
+            file write `fh' `"    echo -e "\033[33m  findsj, resetpath              -- Reset to default\033[0m""' _n
+            file write `fh' "    open '`full_file_bib''" _n
+            file write `fh' "else" _n
+            file write `fh' `"    echo -e "\033[31mDownload failed!\033[0m""' _n
+            file write `fh' "fi" _n
+            file close `fh'
+            
+            * Make script executable
+            shell chmod +x "`script_file_bib'"
+            
+            * Shell script for RIS (Mac/Unix with curl)
+            file open `fh' using "`script_file_ris'", write replace
+            file write `fh' "#!/bin/bash" _n
+            file write `fh' "curl -H 'Referer: `url_article'' \" _n
+            file write `fh' "     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \" _n
+            file write `fh' "     -o '`full_file_ris'' \" _n
+            file write `fh' "     '`url_ris''" _n
+            file write `fh' "if [ -f '`full_file_ris'' ]; then" _n
+            file write `fh' `"    echo -e "\033[32mDownloaded: `full_file_ris'\033[0m""' _n
+            file write `fh' `"    echo """' _n
+            file write `fh' `"    echo -e "\033[36mTo change future download path:\033[0m""' _n
+            file write `fh' `"    echo -e "\033[33m  findsj, setpath(/your/path)  -- Set new path\033[0m""' _n
+            file write `fh' `"    echo -e "\033[33m  findsj, querypath              -- Check current path\033[0m""' _n
+            file write `fh' `"    echo -e "\033[33m  findsj, resetpath              -- Reset to default\033[0m""' _n
+            file write `fh' "    open '`full_file_ris''" _n
+            file write `fh' "else" _n
+            file write `fh' `"    echo -e "\033[31mDownload failed!\033[0m""' _n
+            file write `fh' "fi" _n
+            file close `fh'
+            
+            * Make script executable
+            shell chmod +x "`script_file_ris'"
+        }
+        else {
+            * PowerShell script for BibTeX (Windows)
+            file open `fh' using "`script_file_bib'", write replace
+            file write `fh' "$" "headers = @{" _n
+            file write `fh' "    'Referer' = '`url_article''" _n
+            file write `fh' "    'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'" _n
+            file write `fh' "}" _n
+            file write `fh' "Invoke-WebRequest -Uri '`url_bibtex'' -Headers $" "headers -OutFile '`full_file_bib''" _n
+            file write `fh' "if (Test-Path '`full_file_bib'') {" _n
+            file write `fh' "    Write-Host " `"""' "Downloaded: `full_file_bib'" `"""' " -ForegroundColor Green" _n
+            file write `fh' "    Write-Host " `"""' "" `"""' _n
+            file write `fh' "    Write-Host " `"""' "To change future download path:" `"""' " -ForegroundColor Cyan" _n
+            file write `fh' "    Write-Host " `"""' "  findsj, setpath(d:\your\path)  -- Set new path" `"""' " -ForegroundColor Yellow" _n
+            file write `fh' "    Write-Host " `"""' "  findsj, querypath              -- Check current path" `"""' " -ForegroundColor Yellow" _n
+            file write `fh' "    Write-Host " `"""' "  findsj, resetpath              -- Reset to default" `"""' " -ForegroundColor Yellow" _n
+            file write `fh' "    Start-Process '`full_file_bib''" _n
+            file write `fh' "} else {" _n
+            file write `fh' "    Write-Host " `"""' "Download failed!" `"""' " -ForegroundColor Red" _n
+            file write `fh' "}" _n
+            file close `fh'
+            
+            * PowerShell script for RIS (Windows)
+            file open `fh' using "`script_file_ris'", write replace
+            file write `fh' "$" "headers = @{" _n
+            file write `fh' "    'Referer' = '`url_article''" _n
+            file write `fh' "    'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'" _n
+            file write `fh' "}" _n
+            file write `fh' "Invoke-WebRequest -Uri '`url_ris'' -Headers $" "headers -OutFile '`full_file_ris''" _n
+            file write `fh' "if (Test-Path '`full_file_ris'') {" _n
+            file write `fh' "    Write-Host " `"""' "Downloaded: `full_file_ris'" `"""' " -ForegroundColor Green" _n
+            file write `fh' "    Write-Host " `"""' "" `"""' _n
+            file write `fh' "    Write-Host " `"""' "To change future download path:" `"""' " -ForegroundColor Cyan" _n
+            file write `fh' "    Write-Host " `"""' "  findsj, setpath(d:\your\path)  -- Set new path" `"""' " -ForegroundColor Yellow" _n
+            file write `fh' "    Write-Host " `"""' "  findsj, querypath              -- Check current path" `"""' " -ForegroundColor Yellow" _n
+            file write `fh' "    Write-Host " `"""' "  findsj, resetpath              -- Reset to default" `"""' " -ForegroundColor Yellow" _n
+            file write `fh' "    Start-Process '`full_file_ris''" _n
+            file write `fh' "} else {" _n
+            file write `fh' "    Write-Host " `"""' "Download failed!" `"""' " -ForegroundColor Red" _n
+            file write `fh' "}" _n
+            file close `fh'
+        }
+    }
+    
+    * Create shell commands based on OS
+    if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
+        local dl_bib "!bash `script_file_bib'"
+        local dl_ris "!bash `script_file_ris'"
+    }
+    else {
+        local dl_bib "!powershell -ExecutionPolicy Bypass -File `script_file_bib'"
+        local dl_ris "!powershell -ExecutionPolicy Bypass -File `script_file_ris'"
+    }
+    
+    * Add Download BibTeX and RIS to the same button line
+    dis as text " | " _c
+    dis as text `"{stata `dl_bib':Download BibTeX}"' _c
+    dis as text " | " _c
+    dis as text `"{stata `dl_ris':Download RIS}"'
+    dis ""  // Now end the button line
+    
 }
+
+* Restore original line size
+quietly set linesize `old_linesize'
 
 * Save total number of displayed results
 global findsj_n_display `n_display'
