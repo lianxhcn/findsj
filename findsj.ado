@@ -448,7 +448,7 @@ forvalues i = 1/`n' {
             file write `fh' "curl -sSL -H 'Referer: `url_article'' \" _n
             file write `fh' "     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \" _n
             file write `fh' "     -o '`full_file_bib'' \" _n
-            file write `fh' "     '`url_bibtex''" _n
+            file write `fh' "     '`url_bibtex'' > /dev/null 2>&1" _n
             file write `fh' "if [ -f '`full_file_bib'' ]; then" _n
             file write `fh' `"    echo "Downloaded: `full_file_bib'""' _n
             file write `fh' `"    echo """' _n
@@ -471,7 +471,7 @@ forvalues i = 1/`n' {
             file write `fh' "curl -sSL -H 'Referer: `url_article'' \" _n
             file write `fh' "     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \" _n
             file write `fh' "     -o '`full_file_ris'' \" _n
-            file write `fh' "     '`url_ris''" _n
+            file write `fh' "     '`url_ris'' > /dev/null 2>&1" _n
             file write `fh' "if [ -f '`full_file_ris'' ]; then" _n
             file write `fh' `"    echo "Downloaded: `full_file_ris'""' _n
             file write `fh' `"    echo """' _n
