@@ -497,7 +497,6 @@ forvalues i = 1/`n' {
             file write `fh' "else" _n
             file write `fh' "    echo " `"""' "Download failed: file not created" `"""' " >&2" _n
             file write `fh' "fi" _n
-            file write `fh' "fi" _n
             file close `fh'
             
             * Make script executable
