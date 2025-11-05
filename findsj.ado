@@ -445,7 +445,7 @@ forvalues i = 1/`n' {
             * Shell script for BibTeX (Mac/Unix with curl)
             file open `fh' using "`script_file_bib'", write replace
             file write `fh' "#!/bin/bash" _n
-            file write `fh' "curl -H 'Referer: `url_article'' \" _n
+            file write `fh' "curl -sSL -H 'Referer: `url_article'' \" _n
             file write `fh' "     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \" _n
             file write `fh' "     -o '`full_file_bib'' \" _n
             file write `fh' "     '`url_bibtex''" _n
@@ -468,7 +468,7 @@ forvalues i = 1/`n' {
             * Shell script for RIS (Mac/Unix with curl)
             file open `fh' using "`script_file_ris'", write replace
             file write `fh' "#!/bin/bash" _n
-            file write `fh' "curl -H 'Referer: `url_article'' \" _n
+            file write `fh' "curl -sSL -H 'Referer: `url_article'' \" _n
             file write `fh' "     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' \" _n
             file write `fh' "     -o '`full_file_ris'' \" _n
             file write `fh' "     '`url_ris''" _n
