@@ -482,15 +482,15 @@ forvalues i = 1/`n' {
             file write `fh' "     -o '`full_file_bib'' \" _n
             file write `fh' "     '`url_bibtex''" _n
             file write `fh' "if [ -f '`full_file_bib'' ]; then" _n
-            file write `fh' `"    echo -e "\033[32mDownloaded: `full_file_bib'\033[0m""' _n
+            file write `fh' `"    echo "Downloaded: `full_file_bib'""' _n
             file write `fh' `"    echo """' _n
-            file write `fh' `"    echo -e "\033[36mTo change future download path:\033[0m""' _n
-            file write `fh' `"    echo -e "\033[33m  findsj, setpath(/your/path)  -- Set new path\033[0m""' _n
-            file write `fh' `"    echo -e "\033[33m  findsj, querypath              -- Check current path\033[0m""' _n
-            file write `fh' `"    echo -e "\033[33m  findsj, resetpath              -- Reset to default\033[0m""' _n
+            file write `fh' `"    echo "To change future download path:""' _n
+            file write `fh' `"    echo "  findsj, setpath(/your/path)  -- Set new path""' _n
+            file write `fh' `"    echo "  findsj, querypath              -- Check current path""' _n
+            file write `fh' `"    echo "  findsj, resetpath              -- Reset to default""' _n
             file write `fh' "    open '`full_file_bib''" _n
             file write `fh' "else" _n
-            file write `fh' `"    echo -e "\033[31mDownload failed!\033[0m""' _n
+            file write `fh' `"    echo "Download failed!""' _n
             file write `fh' "fi" _n
             file close `fh'
             
@@ -505,15 +505,15 @@ forvalues i = 1/`n' {
             file write `fh' "     -o '`full_file_ris'' \" _n
             file write `fh' "     '`url_ris''" _n
             file write `fh' "if [ -f '`full_file_ris'' ]; then" _n
-            file write `fh' `"    echo -e "\033[32mDownloaded: `full_file_ris'\033[0m""' _n
+            file write `fh' `"    echo "Downloaded: `full_file_ris'""' _n
             file write `fh' `"    echo """' _n
-            file write `fh' `"    echo -e "\033[36mTo change future download path:\033[0m""' _n
-            file write `fh' `"    echo -e "\033[33m  findsj, setpath(/your/path)  -- Set new path\033[0m""' _n
-            file write `fh' `"    echo -e "\033[33m  findsj, querypath              -- Check current path\033[0m""' _n
-            file write `fh' `"    echo -e "\033[33m  findsj, resetpath              -- Reset to default\033[0m""' _n
+            file write `fh' `"    echo "To change future download path:""' _n
+            file write `fh' `"    echo "  findsj, setpath(/your/path)  -- Set new path""' _n
+            file write `fh' `"    echo "  findsj, querypath              -- Check current path""' _n
+            file write `fh' `"    echo "  findsj, resetpath              -- Reset to default""' _n
             file write `fh' "    open '`full_file_ris''" _n
             file write `fh' "else" _n
-            file write `fh' `"    echo -e "\033[31mDownload failed!\033[0m""' _n
+            file write `fh' `"    echo "Download failed!""' _n
             file write `fh' "fi" _n
             file close `fh'
             
