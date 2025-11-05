@@ -454,6 +454,11 @@ forvalues i = 1/`n' {
             file write `fh' "curl -sSL -H 'Referer: `url_article'' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' -o " `"""' "$" "{OUTPUT_FILE}" `"""' " '`url_bibtex'' > /dev/null 2>&1" _n
             file write `fh' "if [ -f " `"""' "$" "{OUTPUT_FILE}" `"""' " ] && [ -s " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
             file write `fh' "    echo " `"""' "Downloaded: $" "{OUTPUT_FILE}" `"""' _n
+            file write `fh' "    echo " `"""' "" `"""' _n
+            file write `fh' "    echo " `"""' "To change future download path:" `"""' _n
+            file write `fh' "    echo " `"""' "  findsj, setpath(/your/path)  -- Set new path" `"""' _n
+            file write `fh' "    echo " `"""' "  findsj, querypath              -- Check current path" `"""' _n
+            file write `fh' "    echo " `"""' "  findsj, resetpath              -- Reset to default" `"""' _n
             file write `fh' "    open " `"""' "$" "{OUTPUT_FILE}" `"""' " > /dev/null 2>&1" _n
             file write `fh' "else" _n
             file write `fh' "    echo " `"""' "Download failed" `"""' " >&2" _n
@@ -475,6 +480,11 @@ forvalues i = 1/`n' {
             file write `fh' "curl -sSL -H 'Referer: `url_article'' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' -o " `"""' "$" "{OUTPUT_FILE}" `"""' " '`url_ris'' > /dev/null 2>&1" _n
             file write `fh' "if [ -f " `"""' "$" "{OUTPUT_FILE}" `"""' " ] && [ -s " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
             file write `fh' "    echo " `"""' "Downloaded: $" "{OUTPUT_FILE}" `"""' _n
+            file write `fh' "    echo " `"""' "" `"""' _n
+            file write `fh' "    echo " `"""' "To change future download path:" `"""' _n
+            file write `fh' "    echo " `"""' "  findsj, setpath(/your/path)  -- Set new path" `"""' _n
+            file write `fh' "    echo " `"""' "  findsj, querypath              -- Check current path" `"""' _n
+            file write `fh' "    echo " `"""' "  findsj, resetpath              -- Reset to default" `"""' _n
             file write `fh' "    open " `"""' "$" "{OUTPUT_FILE}" `"""' " > /dev/null 2>&1" _n
             file write `fh' "else" _n
             file write `fh' "    echo " `"""' "Download failed" `"""' " >&2" _n
