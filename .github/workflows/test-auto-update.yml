@@ -43,6 +43,18 @@ jobs:
           exit 1
         fi
     
+    - name: Commit and push updated test database
+      run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'actions@github.com'
+        git add findsj_test.dta
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Auto-update test database from GitHub Actions"
+          git push
+        fi
+    
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4
