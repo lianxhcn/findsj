@@ -55,6 +55,14 @@ jobs:
           git push
         fi
     
+    - name: Sync to Gitee
+      uses: wearerequired/git-mirror-action@v1
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.GITEE_PRIVATE_KEY }}
+      with:
+        source-repo: git@github.com:BlueDayDreeaming/findsj.git
+        destination-repo: git@gitee.com:ChuChengWan/findsj.git
+    
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4
