@@ -25,23 +25,9 @@ jobs:
       run: |
         pip install pandas requests beautifulsoup4 pyreadstat
         
-    - name: Download latest Stata Journal search page
-      run: |
-        curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-             -o "view-source_https___www.stata-journal.com_sjsearch.html_choice=keyword&q=.html" \
-             "https://www.stata-journal.com/sjsearch.html?choice=keyword&q="
-        
     - name: Run update script
       run: |
-        # 检查是否需要重命名文件以匹配脚本
-        if [ -f "findsj.dta" ] && [ ! -f "sj_with_artid.dta" ]; then
-          cp findsj.dta sj_with_artid.dta
-        fi
         python auto_update.py
-        # 如果更新成功，将结果复制回findsj.dta
-        if [ -f "sj_with_artid.dta" ]; then
-          cp sj_with_artid.dta findsj.dta
-        fi
         
     - name: Check for changes
       id: changes

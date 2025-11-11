@@ -1,0 +1,22 @@
+name: Sync to Gitee
+
+on:
+  # 当 main 分支有推送时触发
+  push:
+    branches: [main]
+  
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Sync to Gitee
+      uses: wearerequired/git-mirror-action@v1
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.GITEE_PRIVATE_KEY }}
+      with:
+        source-repo: git@github.com:BlueDayDreeaming/findsj.git
+        destination-repo: git@gitee.com:ChuChengWan/findsj.git

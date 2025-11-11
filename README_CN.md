@@ -305,8 +305,11 @@ findsj causal inference, author(Angrist) from(2000) detail
 - 🤖 **定时更新**: 每月1号自动从 Stata Journal 官网获取最新文章
 - 📦 **自动提交**: 新文章会自动添加到 `findsj.dta` 并提交
 - 🔄 **手动触发**: 也可以在 GitHub Actions 页面手动触发更新
+- 🔁 **Gitee 同步**: 自动同步到 Gitee 镜像仓库
 
-详细说明请参见：[自动更新文档](.github/AUTO_UPDATE.md)
+**详细说明**：
+- [GitHub Actions 自动更新文档](.github/AUTO_UPDATE.md)
+- [Gitee 同步配置说明](.github/GITEE_SYNC.md)
 
 ## 引用
 
