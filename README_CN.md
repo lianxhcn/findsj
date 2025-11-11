@@ -298,6 +298,16 @@ findsj causal inference, author(Angrist) from(2000) detail
 - **GitHub Issues**: https://github.com/BlueDayDreeaming/findsj/issues
 - **Gitee Issues**: https://gitee.com/ChuChengWan/findsj/issues
 
+## 数据库自动更新
+
+本仓库使用 GitHub Actions 实现**数据库自动更新**：
+
+- 🤖 **定时更新**: 每月1号自动从 Stata Journal 官网获取最新文章
+- 📦 **自动提交**: 新文章会自动添加到 `findsj.dta` 并提交
+- 🔄 **手动触发**: 也可以在 GitHub Actions 页面手动触发更新
+
+详细说明请参见：[自动更新文档](.github/AUTO_UPDATE.md)
+
 ## 引用
 
 如果您在研究中使用 `findsj`,请引用:

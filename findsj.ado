@@ -9,7 +9,7 @@ version 14
 
 syntax [anything(name=keywords id="keywords")] [, ///
     Author Title Keyword ///
-    Markdown Latex TEX Plain  ///
+    md latex plain  ///
     NOCLIP NOBrowser NOPDF NOPkg ///
     N(integer 10) ALLresults ///
     GETDOI ///
@@ -75,7 +75,13 @@ if "`querypath'" != "" | "`resetpath'" != "" | "`setpath'" != "" {
 }
 
 if "`debug'" != "" set trace on
-if "`tex'" != "" local latex "latex"
+
+* Auto-enable getdoi when export format is specified
+local args_export "`md' `latex' `plain'"
+local num_export = wordcount("`args_export'")
+if `num_export' > 0 {
+    local getdoi "getdoi"
+}
 
 * Read download path from config file
 local config_file "`c(sysdir_personal)'findsj_config.txt"
@@ -115,24 +121,14 @@ else {
     if "`keyword'"!= "" local scope "keyword"
 }
 
-local args_export "`markdown' `latex' `plain'"
+local args_export "`md' `latex' `plain'"
 local num_export = wordcount("`args_export'")
 if `num_export' > 1 {
-    dis as error "Specify only one export format: markdown, latex, or plain"
+    dis as error "Specify only one export format: md, latex, or plain"
     exit 198
 }
 
-* Auto-enable getdoi when export format is specified
-if `num_export' > 0 {
-    local getdoi "getdoi"
-}
-
-dis _n as text "{hline 60}"
-dis as text "  Searching Stata Journal articles..."
-dis as text "  Keywords: " as result "`keywords'"
-dis as text "  Search by: " as result "`scope'"
-if `num_export' > 0 dis as text "  Export format: " as result "`args_export'"
-dis as text "{hline 60}" _n
+dis _n as text "  Searching ... " _c
 
 preserve 
 qui {
@@ -218,9 +214,15 @@ qui {
     keep if art_id != ""
     gen selected = 1
     local n_results = _N
+    
+    * Calculate how many results to display
+    if "`allresults'" != "" local n_display = `n_results'
+    else local n_display = min(`n', `n_results')
 }  // Temporarily exit qui block for user messages
 
-dis as text "Found " as result `n_results' as text " article(s)."
+* Create clickable link to show all results
+local url_sj "https://www.stata-journal.com/sjsearch.html?choice=`scope'&q=`keywords_url'"
+dis as text "Showing " as result "`n_display'" as text " of " `"{browse "`url_sj'":`n_results' articles}"' _n
 
 qui {  // Resume qui block
     * Use HTML-extracted data as primary source
@@ -265,8 +267,12 @@ qui {  // Resume qui block
         exit
     }
     
+    * Clean art_id by manually encoding BOM characters to avoid double encoding
+    gen art_id_clean = art_id
+    qui replace art_id_clean = subinstr(art_id_clean, "ï»¿", "%EF%BB%BF", .)
+    
     local url_base "https://www.stata-journal.com/article.html?article="
-    gen url_html = "`url_base'" + art_id
+    gen url_html = "`url_base'" + art_id_clean
     
     local url_pdf_base "https://journals.sagepub.com/doi/pdf/"
     gen url_pdf = "`url_pdf_base'" + doi if doi != "" & doi != "."
@@ -275,35 +281,74 @@ qui {  // Resume qui block
     gen page_str = ": " + page if page != "" & page != "."
     replace page_str = "" if page_str == ": ."
     
-    if "`markdown'" != "" {
-        gen cite_text = author + " (" + year + "). " + title + ". " + ///
-                        "_Stata Journal_ " + volnum_str + page_str + ". " + ///
-                        "[Link](" + url_html + ")"
-        if "`nopdf'" == "" cap replace cite_text = cite_text + " [PDF](" + url_pdf + ")" if url_pdf != ""
-    }
-    else if "`latex'" != "" {
-        gen cite_text = author + " (" + year + "). " + title + ". " + ///
-                        "\textit{Stata Journal} " + volnum_str + page_str + ". " + ///
-                        "\href{" + url_html + "}{Link}"
-        if "`nopdf'" == "" cap replace cite_text = cite_text + " \href{" + url_pdf + "}{PDF}" if url_pdf != ""
-    }
-    else if "`plain'" != "" {
-        gen cite_text = author + " (" + year + "). " + title + ". " + ///
-                        "Stata Journal " + volnum_str + page_str + "."
-    }
-    else {
-        gen cite_text = author + " (" + year + "). " + title + ". " + ///
-                        "Stata Journal " + volnum_str + page_str + "."
+    * Generate citation text using getiref for each article
+    gen cite_text = ""
+    
+    if "`md'" != "" | "`latex'" != "" | "`plain'" != "" {
+        local n_total = _N
+        forvalues i = 1/`n_total' {
+            local doi_i = doi[`i']
+            
+            * Only call getiref if DOI is available
+            if "`doi_i'" != "" & "`doi_i'" != "." {
+                * Determine format option for getiref
+                local format_opt ""
+                if "`md'" != "" local format_opt "md"
+                if "`latex'" != "" local format_opt "latex"
+                if "`plain'" != "" local format_opt "text"
+                
+                * Call getiref to generate citation
+                cap qui getiref `doi_i', `format_opt' clipoff
+                if _rc == 0 {
+                    local cite_i `"`r(ref)'"'
+                    qui replace cite_text = `"`cite_i'"' in `i'
+                }
+                else {
+                    * Fallback to manual format if getiref fails
+                    local author_i = author[`i']
+                    local year_i = year[`i']
+                    local title_i = title[`i']
+                    local volnum_i = volnum_str[`i']
+                    local page_i = page_str[`i']
+                    
+                    if "`md'" != "" {
+                        local cite_i "`author_i' (`year_i'). `title_i'. _Stata Journal_ `volnum_i'`page_i'."
+                    }
+                    else if "`latex'" != "" {
+                        local cite_i "`author_i' (`year_i'). `title_i'. \textit{Stata Journal} `volnum_i'`page_i'."
+                    }
+                    else {
+                        local cite_i "`author_i' (`year_i'). `title_i'. Stata Journal `volnum_i'`page_i'."
+                    }
+                    qui replace cite_text = "`cite_i'" in `i'
+                }
+            }
+            else {
+                * No DOI available, use manual format
+                local author_i = author[`i']
+                local year_i = year[`i']
+                local title_i = title[`i']
+                local volnum_i = volnum_str[`i']
+                local page_i = page_str[`i']
+                
+                if "`md'" != "" {
+                    local cite_i "`author_i' (`year_i'). `title_i'. _Stata Journal_ `volnum_i'`page_i'."
+                }
+                else if "`latex'" != "" {
+                    local cite_i "`author_i' (`year_i'). `title_i'. \textit{Stata Journal} `volnum_i'`page_i'."
+                }
+                else {
+                    local cite_i "`author_i' (`year_i'). `title_i'. Stata Journal `volnum_i'`page_i'."
+                }
+                qui replace cite_text = "`cite_i'" in `i'
+            }
+        }
     }
 }
 
 local total_results = _N
 if "`allresults'" != "" local n_display = `total_results'
 else local n_display = min(`n', `total_results')
-
-dis _n as text "{hline 60}"
-dis as text "  Search Results (Showing `n_display' of `total_results')"
-dis as text "{hline 60}" _n
 
 * Save and increase line size to prevent wrapping
 local old_linesize = c(linesize)
@@ -316,7 +361,11 @@ forvalues i = 1/`n' {
     local title_i   = title[`i']
     local year_i    = year[`i']
     local art_id_i  = art_id[`i']
+    local art_id_clean_i = art_id_clean[`i']
     local url_html_i = url_html[`i']
+    
+    * Create BOM-free version for Stata commands (search, etc.)
+    local art_id_nobom = subinstr("`art_id_i'", "ï»¿", "", .)
     
     * Clean HTML entities in title for display
     local title_display = `"`title_i'"'
@@ -349,11 +398,67 @@ forvalues i = 1/`n' {
     if "`doi_i'" != "" & "`doi_i'" != "." {
         local has_doi = 1
     }
-    
-    * Fetch DOI only if getdoi option is specified (unless already in data file)
+
+    * Priority 1: try to find DOI in a local `findsj.dta' by matching art_id
+    * Try several likely locations: current working directory, personal plus, and system plus
+    if `has_doi' == 0 {
+        qui {
+            * Clean art_id for matching (remove BOM if present)
+            local art_id_match = subinstr("`art_id_i'", "ï»¿", "", .)
+            
+            local search_paths "`c(pwd)' `c(sysdir_personal)' `c(sysdir_plus)'"
+            foreach p of local search_paths {
+                capture confirm file "`p'/findsj.dta"
+                if _rc == 0 & `has_doi' == 0 {
+                    * Use frame to avoid nested preserve issue (Stata 16+)
+                    * Generate unique frame name to avoid conflicts
+                    local framename = "findsj_temp_" + string(floor(runiform()*100000))
+                    capture {
+                        frame create `framename'
+                        frame `framename': use "`p'/findsj.dta", clear
+                        * Check if artid or art_id variable exists
+                        frame `framename' {
+                            cap confirm variable artid
+                            if _rc == 0 {
+                                qui keep if artid == "`art_id_match'"
+                                if _N > 0 {
+                                    cap local doi_tmp = DOI[1]
+                                    if _rc != 0 cap local doi_tmp = doi[1]
+                                    if "`doi_tmp'" != "" & "`doi_tmp'" != "." {
+                                        local doi_i = "`doi_tmp'"
+                                        local has_doi = 1
+                                    }
+                                }
+                            }
+                            else {
+                                cap confirm variable art_id
+                                if _rc == 0 {
+                                    qui keep if art_id == "`art_id_match'"
+                                    if _N > 0 {
+                                        cap local doi_tmp = DOI[1]
+                                        if _rc != 0 cap local doi_tmp = doi[1]
+                                        cap local page_tmp = page[1]
+                                        if "`doi_tmp'" != "" & "`doi_tmp'" != "." {
+                                            local doi_i = "`doi_tmp'"
+                                            local page_i = "`page_tmp'"
+                                            local has_doi = 1
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        cap frame drop `framename'
+                    }
+                    * If frame failed (Stata < 16), silently skip local lookup
+                }
+            }
+        }
+    }
+
+    * Priority 2 (fallback): if still not found and user requested getdoi, fetch online
     if `has_doi' == 0 & "`getdoi'" != "" {
         qui {
-            cap findsj_doi `art_id_i'
+            cap findsj_doi `art_id_nobom'
             if _rc == 0 {
                 local doi_i = r(doi)
                 local page_i = r(page)
@@ -366,13 +471,13 @@ forvalues i = 1/`n' {
     
     if "`nobrowser'" == "" {
         dis as text "    " _c
-        dis as text `"{browse "`url_html_i'":Article page}"' _c
+        dis as text `"{browse "`url_html_i'":Article}"' _c
         
-        * Display PDF link - use sjpdf.html (works without DOI)
-        if "`nopdf'" == "" {
-            local url_pdf_i "https://www.stata-journal.com/sjpdf.html?articlenum=`art_id_i'"
+        * Display PDF link - use DOI-based URL (only if DOI is available)
+        if "`nopdf'" == "" & `has_doi' == 1 {
+            local url_pdf_i "https://journals.sagepub.com/doi/pdf/`doi_i'"
             dis as text " | " _c
-            dis as text `"{browse "`url_pdf_i'":[PDF]}"' _c
+            dis as text `"{browse "`url_pdf_i'":PDF}"' _c
         }
         
         * Display Google Scholar link
@@ -381,47 +486,74 @@ forvalues i = 1/`n' {
         local title_search = subinstr(`"`title_search'"', "&ndash;", "-", .)
         local url_google "https://scholar.google.com/scholar?q=`title_search'"
         dis as text " | " _c
-        dis as text `"{browse "`url_google'":[Google]}"' _c
+        dis as text `"{browse "`url_google'":Google}"' _c
         
-        * Add package search and software links on same line
+        * Add package search on same line
         if "`nopkg'" == "" {
             dis as text " | " _c
-            dis as text `"{stata "search `art_id_i'":Search package}"' _c
-            * Only show Browse SJ software link if volume/number info is available
-            cap local volnum_url_i = volnum_url[`i']
-            cap local volume_i = volume[`i']
-            if _rc == 0 & "`volume_i'" != "" & "`volume_i'" != "." {
-                dis as text " | " _c
-                dis as text `"{stata "net from http://www.stata-journal.com/software/sj`volnum_url_i'":Browse software}"' _c
-            }
+            dis as text `"{stata "search `art_id_nobom'":Install}"' _c
         }
         
         * Continue on same line - no line break yet
     }
     
-    * Display DOI as plain text in a separate line (only if getdoi was used)
+    * Display DOI as clickable link that copies citation to clipboard
     if "`getdoi'" != "" & `has_doi' == 1 {
         dis ""  // End the button line first
-        dis as text "    DOI: " as result "`doi_i'"
+        
+        * Get citation text for this article if format is specified
+        local cite_for_clip ""
+        if "`md'" != "" | "`latex'" != "" | "`plain'" != "" {
+            * Get the citation text that was already generated
+            cap local cite_for_clip = cite_text[`i']
+        }
+        
+        * If no citation generated, generate it now with default format
+        if `"`cite_for_clip'"' == "" {
+            * Determine format option
+            local format_opt "md"
+            if "`latex'" != "" local format_opt "latex"
+            if "`plain'" != "" local format_opt "text"
+            
+            * Call getiref to generate citation
+            cap qui getiref `doi_i', `format_opt' clipoff
+            if _rc == 0 {
+                local cite_for_clip `"`r(ref)'"'
+            }
+        }
+        
+        * Create clickable DOI that copies citation to clipboard
+        if `"`cite_for_clip'"' != "" {
+            * Store citation in global macro for later access
+            global findsj_cite_`i' `"`cite_for_clip'"'
+            
+            * Create clickable DOI that calls helper command
+            dis as text "    DOI: " _c
+            dis as text `"{stata "findsj_doi_click, idx(`i')":`doi_i'}"'
+        }
+        else {
+            * Fallback: just display DOI as plain text
+            dis as text "    DOI: " as result "`doi_i'"
+        }
     }
     
     * Display citation download links (BibTeX and RIS)
-    local url_article "https://www.stata-journal.com/article.html?article=`art_id_i'"
-    local url_bibtex "https://www.stata-journal.com/ris.php?articlenum=`art_id_i'&abs=1&type=bibtex"
-    local url_ris "https://www.stata-journal.com/ris.php?articlenum=`art_id_i'&abs=1&type=ris"
-    local file_bib "`art_id_i'.bib"
-    local file_ris "`art_id_i'.ris"
+    local url_article "https://www.stata-journal.com/article.html?article=`art_id_clean_i'"
+    local url_bibtex "https://www.stata-journal.com/ris.php?articlenum=`art_id_clean_i'&abs=1&type=bibtex"
+    local url_ris "https://www.stata-journal.com/ris.php?articlenum=`art_id_clean_i'&abs=1&type=ris"
+    local file_bib "`art_id_nobom'.bib"
+    local file_ris "`art_id_nobom'.ris"
     
     * Detect OS and set appropriate script extension
     if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
         local script_ext "sh"
-        local script_file_bib "_download_`art_id_i'_bib.sh"
-        local script_file_ris "_download_`art_id_i'_ris.sh"
+        local script_file_bib "_download_`art_id_nobom'_bib.sh"
+        local script_file_ris "_download_`art_id_nobom'_ris.sh"
     }
     else {
         local script_ext "ps1"
-        local script_file_bib "_download_`art_id_i'_bib.ps1"
-        local script_file_ris "_download_`art_id_i'_ris.ps1"
+        local script_file_bib "_download_`art_id_nobom'_bib.ps1"
+        local script_file_ris "_download_`art_id_nobom'_ris.ps1"
     }
     
     if "`debug'" != "" {
@@ -555,11 +687,11 @@ forvalues i = 1/`n' {
         local dl_ris "!powershell -ExecutionPolicy Bypass -File `script_file_ris'"
     }
     
-    * Add Download BibTeX and RIS to the same button line
+    * Add BibTeX and RIS to the same button line
     dis as text " | " _c
-    dis as text `"{stata `dl_bib':Download BibTeX}"' _c
+    dis as text `"{stata `dl_bib':BibTeX}"' _c
     dis as text " | " _c
-    dis as text `"{stata `dl_ris':Download RIS}"'
+    dis as text `"{stata `dl_ris':RIS}"'
     dis ""  // Now end the button line
     
 }

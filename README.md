@@ -395,6 +395,16 @@ For questions, bug reports, or feature requests:
 - **GitHub Issues**: https://github.com/BlueDayDreeaming/findsj/issues
 - **Gitee Issues**: https://gitee.com/ChuChengWan/findsj/issues
 
+## Automated Database Updates
+
+This repository uses GitHub Actions for **automated database updates**:
+
+- 🤖 **Scheduled Updates**: Automatically fetch latest articles from Stata Journal on the 1st of each month
+- 📦 **Auto Commit**: New articles are automatically added to `findsj.dta` and committed
+- 🔄 **Manual Trigger**: Can also manually trigger updates from GitHub Actions page
+
+For details, see: [Auto Update Documentation](.github/AUTO_UPDATE.md)
+
 ## Citation
 
 If you use `findsj` in your research, please cite:

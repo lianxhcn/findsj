@@ -1,0 +1,73 @@
+name: Auto Update Stata Journal Database
+
+on:
+  # 每月1号的00:00 UTC自动运行
+  schedule:
+    - cron: '0 0 1 * *'
+  
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  update-database:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        
+    - name: Install Python dependencies
+      run: |
+        pip install pandas requests beautifulsoup4 pyreadstat
+        
+    - name: Download latest Stata Journal search page
+      run: |
+        curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+             -o "view-source_https___www.stata-journal.com_sjsearch.html_choice=keyword&q=.html" \
+             "https://www.stata-journal.com/sjsearch.html?choice=keyword&q="
+        
+    - name: Run update script
+      run: |
+        # 检查是否需要重命名文件以匹配脚本
+        if [ -f "findsj.dta" ] && [ ! -f "sj_with_artid.dta" ]; then
+          cp findsj.dta sj_with_artid.dta
+        fi
+        python auto_update.py
+        # 如果更新成功，将结果复制回findsj.dta
+        if [ -f "sj_with_artid.dta" ]; then
+          cp sj_with_artid.dta findsj.dta
+        fi
+        
+    - name: Check for changes
+      id: changes
+      run: |
+        if git diff --quiet findsj.dta; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Commit and push if changed
+      if: steps.changes.outputs.changed == 'true'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add findsj.dta
+        git commit -m "Auto update: Stata Journal database updated on $(date +'%Y-%m-%d')"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Create update summary
+      if: steps.changes.outputs.changed == 'true'
+      run: |
+        echo "## 📊 Stata Journal 数据库已更新" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "更新时间: $(date +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "数据文件: \`findsj.dta\`" >> $GITHUB_STEP_SUMMARY
