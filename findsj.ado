@@ -1136,15 +1136,6 @@ program define findsj_update_db
     dis as text "Database location: " as result "`dta_file'"
     dis ""
     
-    * Backup existing database
-    cap confirm file "`dta_file'"
-    if _rc == 0 {
-        local backup_file "`ado_dir'findsj_backup_`c(current_date)'.dta"
-        local backup_file = subinstr("`backup_file'", " ", "_", .)
-        dis as text "Creating backup: " as result "`backup_file'"
-        cap copy "`dta_file'" "`backup_file'", replace
-    }
-    
     * Try downloading from GitHub first (usually faster)
     dis ""
     dis as text "Attempting to download from GitHub..." _c
@@ -1230,16 +1221,6 @@ program define findsj_update_db
     dis as text "  2. Download findsj.dta"
     dis as text "  3. Copy to: " as result "`ado_dir'"
     dis as text "{hline 70}"
-    
-    * Restore backup if update failed
-    cap confirm file "`backup_file'"
-    if _rc == 0 {
-        dis as text "Restoring backup..."
-        cap copy "`backup_file'" "`dta_file'", replace
-        if _rc == 0 {
-            dis as result "Previous database restored"
-        }
-    }
 end
 
 
