@@ -1029,7 +1029,7 @@ program define findsj_check_update
     * Get database file timestamp (Windows format)
     if c(os) == "Windows" {
         tempfile dirlist
-        qui shell dir "`dta_file'" /TW > "`dirlist'"
+        qui shell dir "`dta_file'" /TC > "`dirlist'"
         
         * Parse the date from dir output
         cap infix str line 1-200 using "`dirlist'", clear
