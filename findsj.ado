@@ -1037,8 +1037,16 @@ program define findsj_check_update
         
         if _N > 0 {
             local file_info = line[1]
-            * Extract date in format MM/DD/YYYY or DD/MM/YYYY
-            if regexm("`file_info'", "([0-9]{2})/([0-9]{2})/([0-9]{4})") {
+            * Extract date in format YYYY/MM/DD (Chinese Windows) or MM/DD/YYYY
+            if regexm("`file_info'", "([0-9]{4})/([0-9]{2})/([0-9]{2})") {
+                * Format: YYYY/MM/DD (e.g., 2025/09/28)
+                local year = regexs(1)
+                local month = regexs(2)
+                local day = regexs(3)
+                local file_date = mdy(`month', `day', `year')
+            }
+            else if regexm("`file_info'", "([0-9]{2})/([0-9]{2})/([0-9]{4})") {
+                * Format: MM/DD/YYYY or DD/MM/YYYY
                 local month = regexs(1)
                 local day = regexs(2)
                 local year = regexs(3)
@@ -1049,8 +1057,10 @@ program define findsj_check_update
                     * Try DD/MM/YYYY
                     local file_date = date("`day'/`month'/`year'", "DMY")
                 }
-                
-                local today = date("`current_date'", "DMY")
+            }
+            
+            * Check if date was successfully parsed
+            if !missing(`file_date') {
                 local days_diff = `today' - `file_date'
                 
                 * Check if database is older than 30 days
