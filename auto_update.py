@@ -20,6 +20,44 @@ SLEEP_TIME = 0.5  # 请求间隔（秒）
 
 # ==================== 工具函数 ====================
 
+def clean_unicode_for_stata(text):
+    """清理文本中无法用 latin-1 编码的 Unicode 字符"""
+    if pd.isna(text) or not isinstance(text, str):
+        return text
+    
+    # 替换常见的 Unicode 字符为 ASCII 等效字符
+    replacements = {
+        '\u2013': '-',      # en dash
+        '\u2014': '--',     # em dash
+        '\u2018': "'",      # left single quotation mark
+        '\u2019': "'",      # right single quotation mark
+        '\u201c': '"',      # left double quotation mark
+        '\u201d': '"',      # right double quotation mark
+        '\u2026': '...',    # horizontal ellipsis
+        '\u00a0': ' ',      # non-breaking space
+        '\u2022': '*',      # bullet
+        '\u00b7': '·',      # middle dot
+        '\u2212': '-',      # minus sign
+        '\u00d7': 'x',      # multiplication sign
+        '\u00f7': '/',      # division sign
+        '\u2264': '<=',     # less than or equal to
+        '\u2265': '>=',     # greater than or equal to
+        '\u2260': '!=',     # not equal to
+        '\u00b1': '+/-',    # plus-minus sign
+    }
+    
+    for unicode_char, ascii_char in replacements.items():
+        text = text.replace(unicode_char, ascii_char)
+    
+    # 如果还有无法编码的字符，使用 ASCII 近似
+    try:
+        text.encode('latin-1')
+    except UnicodeEncodeError:
+        # 使用 unidecode 或简单替换
+        text = text.encode('ascii', errors='ignore').decode('ascii')
+    
+    return text
+
 def fetch_all_articles_from_search():
     """从搜索页面获取所有文章的artid（按HTML顺序，从新到旧）"""
     print("    从搜索页面获取文章列表...")
@@ -218,6 +256,13 @@ def main():
     common_cols = list(set(dta_df.columns) & set(new_df.columns))
     updated_df = pd.concat([dta_df, new_df[common_cols]], ignore_index=True)
     updated_df = updated_df.drop_duplicates(subset=['artid'], keep='last')
+    
+    # 清理 Unicode 字符（用于 Stata latin-1 编码）
+    print(f"    清理 Unicode 字符...")
+    text_columns = ['artid', 'title', 'author', 'DOI', 'page']
+    for col in text_columns:
+        if col in updated_df.columns:
+            updated_df[col] = updated_df[col].apply(clean_unicode_for_stata)
     
     # 5. 保存
     print(f"\n[5] 保存更新...")
