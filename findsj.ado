@@ -19,12 +19,12 @@ syntax [anything(name=keywords id="keywords")] [, ///
     GETDOI ///
     Clear Debug ///
     SETPath(string) QUERYpath RESETpath ///
-    UPdate NOUPdatecheck ///
+    UPdate(string) NOUPdatecheck ///
     ]
 
 * Handle database update subcommand
 if "`update'" != "" {
-    findsj_update_db
+    findsj_update_db "`update'"
     exit
 }
 
@@ -1111,9 +1111,13 @@ program define findsj_check_update
                     dis as text "(Last updated: " as result %tdCY-N-D `file_date' as text ")"
                     dis as text "A newer version may be available from the repository."
                     dis ""
-                    dis as text "Would you like to update now? (Reminder " as result "`=`reminder_count'+1'" as text "/2 this month)"
-                    dis as text "  " as result "y" as text " = Yes, update now"
-                    dis as text "  " as result "n" as text " = No, remind me later"
+                    dis as text "To update (choose one):"
+                    dis as text "  " as result "findsj, update(github)" as text " - For international users"
+                    dis as text "  " as result "findsj, update(gitee)" as text "  - For users in China (faster)"
+                    dis as text "  " as result "findsj, update(both)" as text "   - Try both sources"
+                    dis ""
+                    dis as text "Reminder " as result "`=`reminder_count'+1'" as text "/2 this month"
+                    dis as text "To skip this check: " as result "findsj ..., noupdatecheck"
                     dis as text "{hline 70}"
                     
                     * Increment reminder count
@@ -1121,12 +1125,6 @@ program define findsj_check_update
                     file open `fh' using "`reminder_count_file'", write replace
                     file write `fh' "`reminder_count'"
                     file close `fh'
-                    
-                    * Note: User will need to manually run findsj, update
-                    * We cannot use interactive input in a way that works well with all Stata versions
-                    dis as text "To update: " as result "findsj, update"
-                    dis as text "To skip this check: " as result "findsj ..., noupdatecheck"
-                    dis as text "{hline 70}"
                 }
             }
         }
@@ -1157,6 +1155,8 @@ end
 
 cap program drop findsj_update_db
 program define findsj_update_db
+    args source_choice
+    
     dis as text "{hline 70}"
     dis as result "  Stata Journal Database Update"
     dis as text "{hline 70}"
@@ -1170,38 +1170,45 @@ program define findsj_update_db
     dis as text "Database location: " as result "`dta_file'"
     dis ""
     
-    * Ask user to choose download source
-    dis as text "Please select download source:"
-    dis as text "  " as result "1" as text " = GitHub (Recommended for international users)"
-    dis as text "  " as result "2" as text " = Gitee (Recommended for users in China)"
-    dis as text "  " as result "3" as text " = Try both (GitHub first, then Gitee if failed)"
-    dis as text "{hline 70}"
-    dis as text "Enter your choice (1/2/3): " _request(choice)
-    
-    * Validate choice
-    if "`choice'" != "1" & "`choice'" != "2" & "`choice'" != "3" {
-        dis as error "Invalid choice. Please enter 1, 2, or 3."
-        exit 198
-    }
-    
     * Define download sources
     local github_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/findsj.dta"
     local gitee_url "https://gitee.com/ChuChengWan/findsj/raw/main/findsj.dta"
     
+    * Determine source based on argument
+    if "`source_choice'" == "" | "`source_choice'" == "auto" {
+        dis as text "Download source options:"
+        dis as text "  " as result "github" as text " = GitHub (Recommended for international users)"
+        dis as text "  " as result "gitee" as text "  = Gitee (Recommended for users in China)"
+        dis as text "  " as result "both" as text "   = Try both (GitHub first, then Gitee)"
+        dis as text ""
+        dis as text "Usage examples:"
+        dis as text "  " as result "findsj, update(github)" as text "  - Download from GitHub only"
+        dis as text "  " as result "findsj, update(gitee)" as text "   - Download from Gitee only"
+        dis as text "  " as result "findsj, update(both)" as text "    - Try both sources"
+        dis as text "{hline 70}"
+        dis as error "Please specify a source: update(github), update(gitee), or update(both)"
+        exit 198
+    }
+    
     local sources ""
     local source_names ""
     
-    if "`choice'" == "1" {
+    if "`source_choice'" == "github" {
         local sources "`github_url'"
         local source_names "GitHub"
     }
-    else if "`choice'" == "2" {
+    else if "`source_choice'" == "gitee" {
         local sources "`gitee_url'"
         local source_names "Gitee"
     }
-    else {
+    else if "`source_choice'" == "both" {
         local sources "`github_url' `gitee_url'"
         local source_names "GitHub Gitee"
+    }
+    else {
+        dis as error "Invalid source: `source_choice'"
+        dis as text "Valid options: github, gitee, both"
+        exit 198
     }
     
     * Try each source
