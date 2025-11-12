@@ -19,11 +19,11 @@ syntax [anything(name=keywords id="keywords")] [, ///
     GETDOI ///
     Clear Debug ///
     SETPath(string) QUERYpath RESETpath ///
-    Source(string) ///
+    UPdate source(string) ///
     ]
 
 * Handle database update subcommand
-if "`source'" != "" {
+if "`update'" != "" {
     * Use source if specified, otherwise empty (will show usage)
     findsj_update_db "`source'"
     exit
@@ -1024,9 +1024,9 @@ program define findsj_update_db
     * Determine source based on argument
     if "`source_choice'" == "" | "`source_choice'" == "auto" {
         dis as text "Download source options:"
-        dis as text "  {stata findsj, source(github):github} = GitHub (Recommended for international users)"
-        dis as text "  {stata findsj, source(gitee):gitee}  = Gitee (Recommended for users in China)"
-        dis as text "  {stata findsj, source(both):both}   = Try both (GitHub first, then Gitee)"
+        dis as text "  {stata findsj, update source(github):github} = GitHub (Recommended for international users)"
+        dis as text "  {stata findsj, update source(gitee):gitee}  = Gitee (Recommended for users in China)"
+        dis as text "  {stata findsj, update source(both):both}   = Try both (GitHub first, then Gitee)"
         dis as text ""
         dis as text "Click on a source above to download."
         dis as text "{hline 70}"

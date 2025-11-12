@@ -108,9 +108,9 @@ net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/) replace
 
 安装后，更新至最新文章数据库：
 ```stata
-findsj, source(github)    // 国际用户
-findsj, source(gitee)     // 中国用户（更快）
-findsj, source(both)      // 自动回退
+findsj, update source(github)    // 国际用户
+findsj, update source(gitee)     // 中国用户（更快）
+findsj, update source(both)      // 自动回退
 ```
 
 ---
@@ -194,8 +194,8 @@ findsj [关键词] [, 选项]
 - `resetpath` - 重置为默认路径
 
 ### 数据库管理
-- `update` - 更新文章数据库（需配合 `updatesource()` 使用）
-- `updatesource(来源)` - 指定更新来源：
+- `update` - 更新文章数据库（需配合 `source()` 使用）
+- `source(来源)` - 指定更新来源：
   - `github` - 从 GitHub 下载（国际用户）
   - `gitee` - 从 Gitee 下载（中国用户，更快）
   - `both` - 先尝试 GitHub，失败后回退到 Gitee
@@ -243,7 +243,7 @@ findsj "Christopher F. Baum", author allresults
 
 保持本地数据库为最新：
 ```stata
-findsj, source(both)
+findsj, update source(both)
 ```
 
 ---
