@@ -19,12 +19,13 @@ syntax [anything(name=keywords id="keywords")] [, ///
     GETDOI ///
     Clear Debug ///
     SETPath(string) QUERYpath RESETpath ///
-    UPdate(string) NOUPdatecheck ///
+    UPdate UPdatesource(string) NOUPdatecheck ///
     ]
 
 * Handle database update subcommand
 if "`update'" != "" {
-    findsj_update_db "`update'"
+    * Use updatesource if specified, otherwise empty (will show usage)
+    findsj_update_db "`updatesource'"
     exit
 }
 
@@ -1112,9 +1113,9 @@ program define findsj_check_update
                     dis as text "A newer version may be available from the repository."
                     dis ""
                     dis as text "To update (choose one):"
-                    dis as text "  " as result "findsj, update(github)" as text " - For international users"
-                    dis as text "  " as result "findsj, update(gitee)" as text "  - For users in China (faster)"
-                    dis as text "  " as result "findsj, update(both)" as text "   - Try both sources"
+                    dis as text "  " as result "findsj, update updatesource(github)" as text " - For international users"
+                    dis as text "  " as result "findsj, update updatesource(gitee)" as text "  - For users in China (faster)"
+                    dis as text "  " as result "findsj, update updatesource(both)" as text "   - Try both sources"
                     dis ""
                     dis as text "Reminder " as result "`=`reminder_count'+1'" as text "/2 this month"
                     dis as text "To skip this check: " as result "findsj ..., noupdatecheck"
@@ -1182,11 +1183,11 @@ program define findsj_update_db
         dis as text "  " as result "both" as text "   = Try both (GitHub first, then Gitee)"
         dis as text ""
         dis as text "Usage examples:"
-        dis as text "  " as result "findsj, update(github)" as text "  - Download from GitHub only"
-        dis as text "  " as result "findsj, update(gitee)" as text "   - Download from Gitee only"
-        dis as text "  " as result "findsj, update(both)" as text "    - Try both sources"
+        dis as text "  " as result "findsj, update updatesource(github)" as text "  - Download from GitHub only"
+        dis as text "  " as result "findsj, update updatesource(gitee)" as text "   - Download from Gitee only"
+        dis as text "  " as result "findsj, update updatesource(both)" as text "    - Try both sources"
         dis as text "{hline 70}"
-        dis as error "Please specify a source: update(github), update(gitee), or update(both)"
+        dis as error "Please specify a source using the updatesource() option"
         exit 198
     }
     
