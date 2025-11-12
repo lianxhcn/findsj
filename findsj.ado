@@ -1112,10 +1112,10 @@ program define findsj_check_update
                     dis as text "(Last updated: " as result %tdCY-N-D `file_date' as text ")"
                     dis as text "A newer version may be available from the repository."
                     dis ""
-                    dis as text "To update (choose one):"
-                    dis as text "  " as result "findsj, update updatesource(github)" as text " - For international users"
-                    dis as text "  " as result "findsj, update updatesource(gitee)" as text "  - For users in China (faster)"
-                    dis as text "  " as result "findsj, update updatesource(both)" as text "   - Try both sources"
+                    dis as text "Click to update (choose one):"
+                    dis as text "  {stata findsj, update updatesource(github):GitHub}  - For international users"
+                    dis as text "  {stata findsj, update updatesource(gitee):Gitee}   - For users in China (faster)"
+                    dis as text "  {stata findsj, update updatesource(both):Both}    - Try both sources"
                     dis ""
                     dis as text "Reminder " as result "`=`reminder_count'+1'" as text "/2 this month"
                     dis as text "To skip this check: " as result "findsj ..., noupdatecheck"
@@ -1178,17 +1178,13 @@ program define findsj_update_db
     * Determine source based on argument
     if "`source_choice'" == "" | "`source_choice'" == "auto" {
         dis as text "Download source options:"
-        dis as text "  " as result "github" as text " = GitHub (Recommended for international users)"
-        dis as text "  " as result "gitee" as text "  = Gitee (Recommended for users in China)"
-        dis as text "  " as result "both" as text "   = Try both (GitHub first, then Gitee)"
+        dis as text "  {stata findsj, update updatesource(github):github} = GitHub (Recommended for international users)"
+        dis as text "  {stata findsj, update updatesource(gitee):gitee}  = Gitee (Recommended for users in China)"
+        dis as text "  {stata findsj, update updatesource(both):both}   = Try both (GitHub first, then Gitee)"
         dis as text ""
-        dis as text "Usage examples:"
-        dis as text "  " as result "findsj, update updatesource(github)" as text "  - Download from GitHub only"
-        dis as text "  " as result "findsj, update updatesource(gitee)" as text "   - Download from Gitee only"
-        dis as text "  " as result "findsj, update updatesource(both)" as text "    - Try both sources"
+        dis as text "Click on a source above to download."
         dis as text "{hline 70}"
-        dis as error "Please specify a source using the updatesource() option"
-        exit 198
+        exit
     }
     
     local sources ""
