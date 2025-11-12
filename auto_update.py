@@ -40,6 +40,7 @@ def fetch_all_articles_from_search():
         
         artids = []
         seen_clean_ids = set()
+        skipped_up = 0
         
         for link in article_links:
             href = link.get('href', '')
@@ -50,11 +51,18 @@ def fetch_all_articles_from_search():
                 # 同时记录清理后的版本用于去重
                 artid_clean = artid_raw.replace('\ufeff', '').replace('%EF%BB%BF', '').strip()
                 
+                # 跳过以 "up" 开头的 artid（updates 类文章）
+                if artid_clean.lower().startswith('up'):
+                    skipped_up += 1
+                    continue
+                
                 if artid_clean not in seen_clean_ids:
                     artids.append(artid_raw)  # 保存原始版本
                     seen_clean_ids.add(artid_clean)
         
         print(f"    找到 {len(artids)} 个唯一的 artid")
+        if skipped_up > 0:
+            print(f"    跳过 {skipped_up} 个 'up' 开头的文章（updates）")
         return artids
         
     except Exception as e:
