@@ -1,6 +1,10 @@
-*! findsj version 1.1.0  2025/11/05
+*! findsj version 1.4.0  2025/11/12
 *! Authors: Yujun Lian (arlionn@163.com), Chucheng Wan (chucheng.wan@outlook.com)
 *! Search Stata Journal and Stata Technical Bulletin articles
+*! v1.4.0: Auto-check for database updates (monthly reminder with download option)
+*! v1.3.0: Direct getiref integration - click .md/.latex/.txt calls getiref with DOI
+*! v1.2.0: Simplified to single 'ref' option with three format buttons
+*! v1.1.1: Added individual "Ref" button for each article to copy citation
 *! v1.1.0: Removed local data file dependency, all info fetched online
 
 cap program drop findsj
@@ -9,13 +13,25 @@ version 14
 
 syntax [anything(name=keywords id="keywords")] [, ///
     Author Title Keyword ///
-    md latex plain  ///
-    NOCLIP NOBrowser NOPDF NOPkg ///
+    REF  ///
+    NOBrowser NOPDF NOPkg ///
     N(integer 10) ALLresults ///
     GETDOI ///
     Clear Debug ///
     SETPath(string) QUERYpath RESETpath ///
+    UPdate NOUPdatecheck ///
     ]
+
+* Handle database update subcommand
+if "`update'" != "" {
+    findsj_update_db
+    exit
+}
+
+* Check for database updates (unless noupdatecheck is specified)
+if "`noupdatecheck'" == "" {
+    findsj_check_update
+}
 
 * Handle download path configuration subcommands
 if "`querypath'" != "" | "`resetpath'" != "" | "`setpath'" != "" {
@@ -76,10 +92,8 @@ if "`querypath'" != "" | "`resetpath'" != "" | "`setpath'" != "" {
 
 if "`debug'" != "" set trace on
 
-* Auto-enable getdoi when export format is specified
-local args_export "`md' `latex' `plain'"
-local num_export = wordcount("`args_export'")
-if `num_export' > 0 {
+* Auto-enable getdoi when ref option is specified
+if "`ref'" != "" {
     local getdoi "getdoi"
 }
 
@@ -119,13 +133,6 @@ else {
     if "`author'" != "" local scope "author"
     if "`title'"  != "" local scope "title"
     if "`keyword'"!= "" local scope "keyword"
-}
-
-local args_export "`md' `latex' `plain'"
-local num_export = wordcount("`args_export'")
-if `num_export' > 1 {
-    dis as error "Specify only one export format: md, latex, or plain"
-    exit 198
 }
 
 dis _n as text "  Searching ... " _c
@@ -280,70 +287,6 @@ qui {  // Resume qui block
     * Page string for display
     gen page_str = ": " + page if page != "" & page != "."
     replace page_str = "" if page_str == ": ."
-    
-    * Generate citation text using getiref for each article
-    gen cite_text = ""
-    
-    if "`md'" != "" | "`latex'" != "" | "`plain'" != "" {
-        local n_total = _N
-        forvalues i = 1/`n_total' {
-            local doi_i = doi[`i']
-            
-            * Only call getiref if DOI is available
-            if "`doi_i'" != "" & "`doi_i'" != "." {
-                * Determine format option for getiref
-                local format_opt ""
-                if "`md'" != "" local format_opt "md"
-                if "`latex'" != "" local format_opt "latex"
-                if "`plain'" != "" local format_opt "text"
-                
-                * Call getiref to generate citation
-                cap qui getiref `doi_i', `format_opt' clipoff
-                if _rc == 0 {
-                    local cite_i `"`r(ref)'"'
-                    qui replace cite_text = `"`cite_i'"' in `i'
-                }
-                else {
-                    * Fallback to manual format if getiref fails
-                    local author_i = author[`i']
-                    local year_i = year[`i']
-                    local title_i = title[`i']
-                    local volnum_i = volnum_str[`i']
-                    local page_i = page_str[`i']
-                    
-                    if "`md'" != "" {
-                        local cite_i "`author_i' (`year_i'). `title_i'. _Stata Journal_ `volnum_i'`page_i'."
-                    }
-                    else if "`latex'" != "" {
-                        local cite_i "`author_i' (`year_i'). `title_i'. \textit{Stata Journal} `volnum_i'`page_i'."
-                    }
-                    else {
-                        local cite_i "`author_i' (`year_i'). `title_i'. Stata Journal `volnum_i'`page_i'."
-                    }
-                    qui replace cite_text = "`cite_i'" in `i'
-                }
-            }
-            else {
-                * No DOI available, use manual format
-                local author_i = author[`i']
-                local year_i = year[`i']
-                local title_i = title[`i']
-                local volnum_i = volnum_str[`i']
-                local page_i = page_str[`i']
-                
-                if "`md'" != "" {
-                    local cite_i "`author_i' (`year_i'). `title_i'. _Stata Journal_ `volnum_i'`page_i'."
-                }
-                else if "`latex'" != "" {
-                    local cite_i "`author_i' (`year_i'). `title_i'. \textit{Stata Journal} `volnum_i'`page_i'."
-                }
-                else {
-                    local cite_i "`author_i' (`year_i'). `title_i'. Stata Journal `volnum_i'`page_i'."
-                }
-                qui replace cite_text = "`cite_i'" in `i'
-            }
-        }
-    }
 }
 
 local total_results = _N
@@ -381,7 +324,7 @@ forvalues i = 1/`n' {
     
     * Second line: Author, year, and journal info
     dis as text "{p 4 4 4}" as result "`author_i'" as text " (" as result "`year_i'" as text "). " ///
-        as text "_Stata Journal_" _c
+        as text "Stata Journal" _c
     if "`volnum_i'" != "" & "`volnum_i'" != "." {
         dis as text " " as result "`volnum_i'" _c
     }
@@ -469,6 +412,25 @@ forvalues i = 1/`n' {
         }
     }
     
+    * Prepare BibTeX and RIS download links BEFORE displaying
+    local url_article "https://www.stata-journal.com/article.html?article=`art_id_clean_i'"
+    local url_bibtex "https://www.stata-journal.com/ris.php?articlenum=`art_id_clean_i'&abs=1&type=bibtex"
+    local url_ris "https://www.stata-journal.com/ris.php?articlenum=`art_id_clean_i'&abs=1&type=ris"
+    local file_bib "`art_id_nobom'.bib"
+    local file_ris "`art_id_nobom'.ris"
+    
+    * Detect OS and set appropriate script extension
+    if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
+        local script_ext "sh"
+        local script_file_bib "_download_`art_id_nobom'_bib.sh"
+        local script_file_ris "_download_`art_id_nobom'_ris.sh"
+    }
+    else {
+        local script_ext "ps1"
+        local script_file_bib "_download_`art_id_nobom'_bib.ps1"
+        local script_file_ris "_download_`art_id_nobom'_ris.ps1"
+    }
+    
     if "`nobrowser'" == "" {
         dis as text "    " _c
         dis as text `"{browse "`url_html_i'":Article}"' _c
@@ -494,67 +456,49 @@ forvalues i = 1/`n' {
             dis as text `"{stata "search `art_id_nobom'":Install}"' _c
         }
         
-        * Continue on same line - no line break yet
-    }
-    
-    * Display DOI as clickable link that copies citation to clipboard
-    if "`getdoi'" != "" & `has_doi' == 1 {
-        dis ""  // End the button line first
-        
-        * Get citation text for this article if format is specified
-        local cite_for_clip ""
-        if "`md'" != "" | "`latex'" != "" | "`plain'" != "" {
-            * Get the citation text that was already generated
-            cap local cite_for_clip = cite_text[`i']
-        }
-        
-        * If no citation generated, generate it now with default format
-        if `"`cite_for_clip'"' == "" {
-            * Determine format option
-            local format_opt "md"
-            if "`latex'" != "" local format_opt "latex"
-            if "`plain'" != "" local format_opt "text"
-            
-            * Call getiref to generate citation
-            cap qui getiref `doi_i', `format_opt' clipoff
-            if _rc == 0 {
-                local cite_for_clip `"`r(ref)'"'
-            }
-        }
-        
-        * Create clickable DOI that copies citation to clipboard
-        if `"`cite_for_clip'"' != "" {
-            * Store citation in global macro for later access
-            global findsj_cite_`i' `"`cite_for_clip'"'
-            
-            * Create clickable DOI that calls helper command
-            dis as text "    DOI: " _c
-            dis as text `"{stata "findsj_doi_click, idx(`i')":`doi_i'}"'
+        * Prepare BibTeX and RIS download commands (but don't create scripts yet)
+        * Detect OS and set appropriate command format
+        if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
+            local dl_bib_cmd "!bash _download_`art_id_nobom'_bib.sh"
+            local dl_ris_cmd "!bash _download_`art_id_nobom'_ris.sh"
         }
         else {
-            * Fallback: just display DOI as plain text
-            dis as text "    DOI: " as result "`doi_i'"
+            local dl_bib_cmd "!powershell -ExecutionPolicy Bypass -File _download_`art_id_nobom'_bib.ps1"
+            local dl_ris_cmd "!powershell -ExecutionPolicy Bypass -File _download_`art_id_nobom'_ris.ps1"
+        }
+        
+        * Display BibTeX and RIS on the same line
+        dis as text " | " _c
+        dis as text `"{stata `dl_bib_cmd':BibTeX}"' _c
+        dis as text " | " _c
+        dis as text `"{stata `dl_ris_cmd':RIS}"'
+    }
+    else {
+        dis ""  // End line if nobrowser
+    }
+    
+    * Display format buttons (.md .latex .txt) if ref option is specified
+    if "`ref'" != "" {
+        dis ""  // End the button line first
+        
+        * Check if we have DOI for generating citations
+        if `has_doi' == 1 & "`getdoi'" != "" {
+            * Display "Cite:" label followed by three format buttons with separator
+            dis as text "    Cite: " _c
+            dis as text `"{stata "getiref `doi_i', md":.md}"' _c
+            dis as text " | " _c
+            dis as text `"{stata "getiref `doi_i', latex":.latex}"' _c
+            dis as text " | " _c
+            dis as text `"{stata "getiref `doi_i', text":.txt}"'
+        }
+        else {
+            * No DOI available
+            dis as text "    (Citation unavailable - no DOI found)"
         }
     }
     
-    * Display citation download links (BibTeX and RIS)
-    local url_article "https://www.stata-journal.com/article.html?article=`art_id_clean_i'"
-    local url_bibtex "https://www.stata-journal.com/ris.php?articlenum=`art_id_clean_i'&abs=1&type=bibtex"
-    local url_ris "https://www.stata-journal.com/ris.php?articlenum=`art_id_clean_i'&abs=1&type=ris"
-    local file_bib "`art_id_nobom'.bib"
-    local file_ris "`art_id_nobom'.ris"
-    
-    * Detect OS and set appropriate script extension
-    if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
-        local script_ext "sh"
-        local script_file_bib "_download_`art_id_nobom'_bib.sh"
-        local script_file_ris "_download_`art_id_nobom'_ris.sh"
-    }
-    else {
-        local script_ext "ps1"
-        local script_file_bib "_download_`art_id_nobom'_bib.ps1"
-        local script_file_ris "_download_`art_id_nobom'_ris.ps1"
-    }
+    * Create download scripts for BibTeX and RIS
+    * Create download scripts (PowerShell for Windows, shell script for Mac/Unix)
     
     if "`debug'" != "" {
         noi dis as text "DEBUG: art_id_i = `art_id_i'"
@@ -686,15 +630,10 @@ forvalues i = 1/`n' {
         local dl_bib "!powershell -ExecutionPolicy Bypass -File `script_file_bib'"
         local dl_ris "!powershell -ExecutionPolicy Bypass -File `script_file_ris'"
     }
-    
-    * Add BibTeX and RIS to the same button line
-    dis as text " | " _c
-    dis as text `"{stata `dl_bib':BibTeX}"' _c
-    dis as text " | " _c
-    dis as text `"{stata `dl_ris':RIS}"'
-    dis ""  // Now end the button line
+
     
 }
+
 
 * Restore original line size
 quietly set linesize `old_linesize'
@@ -710,22 +649,8 @@ if `total_results' > `n_display' {
     dis as text "{hline 60}"
 }
 
-if `num_export' > 0 & "`noclip'" == "" {
-    local export_text ""
-    forvalues i = 1/`n_display' {
-        local cite_i = cite_text[`i']
-        local export_text `"`export_text'`cite_i'"'
-        if `i' < `n_display' local export_text `"`export_text'`=char(10)'`=char(10)'"'
-    }
-    
-    cap findsj_clipout `"`export_text'"'
-    if _rc == 0 {
-        dis _n as text "→ Citations copied to clipboard in " as result "`args_export'" as text " format."
-        if `n_display' < `total_results' {
-            dis as text "  (Copied " as result "`n_display'" as text " of " as result "`total_results'" as text " results. Use " as result "allresults" as text " to copy all)"
-        }
-    }
-}
+* Note: Batch clipboard copy removed. Users can click individual "Ref" buttons to copy citations.
+* This provides better user experience and avoids command-line length limitations.
 
 return local keywords   = "`keywords'"
 return local scope      = "`scope'"
@@ -809,38 +734,6 @@ preserve
   }
 restore
 }
-end
-
-cap program drop findsj_clipout
-program define findsj_clipout
-version 8.0 
-    args text_to_clipboard
-    tempfile cliptemp
-    tempname fh
-    qui {
-        file open `fh' using "`cliptemp'", write text replace
-        file write `fh' `"`text_to_clipboard'"'
-        file close `fh'
-    }
-    
-    * Detect OS and use appropriate clipboard command
-    if "`c(os)'" == "Windows" {
-        cap !type "`cliptemp'" | clip
-    }
-    else if "`c(os)'" == "MacOSX" {
-        cap !cat "`cliptemp'" | pbcopy
-    }
-    else {
-        dis as text "Note: Clipboard operation only supported on Windows and Mac"
-        dis as text "You can manually copy the text displayed above"
-        exit
-    }
-    
-    if _rc == 0 dis as text "Citations copied to clipboard. Press Ctrl+V (Cmd+V on Mac) to paste"
-    else {
-        dis as text "Note: Clipboard operation failed"
-        dis as text "You can manually copy the text displayed above"
-    }
 end
 
 cap program drop findsj_doi   
@@ -1105,5 +998,249 @@ qui{
   drop `var'_wordcount `var'_rev* `var'_Last  `var'_rest  `var'`suffix'  
 }  
 end
+
+
+*===============================================================================
+* Database Update Check and Download Functions
+*===============================================================================
+
+cap program drop findsj_check_update
+program define findsj_check_update
+    * Find findsj.ado location
+    qui findfile findsj.ado
+    local ado_dir = subinstr("`r(fn)'", "findsj.ado", "", .)
+    local dta_file "`ado_dir'findsj.dta"
+    
+    * Check if database exists
+    cap confirm file "`dta_file'"
+    if _rc {
+        dis as text "{hline 70}"
+        dis as error "Database file not found: findsj.dta"
+        dis as text "Please run: " as result "findsj, update" as text " to download the latest database."
+        dis as text "{hline 70}"
+        exit
+    }
+    
+    * Get file modification time
+    tempname fh
+    file open `fh' using "`dta_file'", read binary
+    file close `fh'
+    
+    * Check last update timestamp
+    local update_check_file "`c(sysdir_personal)'findsj_lastcheck.txt"
+    local current_date = c(current_date)
+    local should_check = 1
+    
+    * Read last check date
+    cap confirm file "`update_check_file'"
+    if _rc == 0 {
+        file open `fh' using "`update_check_file'", read text
+        file read `fh' last_check
+        file close `fh'
+        
+        * Convert dates to Stata date format
+        local last_date = date("`last_check'", "DMY")
+        local today = date("`current_date'", "DMY")
+        
+        * Only check once per day
+        if `today' == `last_date' {
+            local should_check = 0
+        }
+    }
+    
+    if !`should_check' exit
+    
+    * Update last check date
+    file open `fh' using "`update_check_file'", write replace
+    file write `fh' "`current_date'"
+    file close `fh'
+    
+    * Get database file timestamp (Windows format)
+    if c(os) == "Windows" {
+        tempfile dirlist
+        qui shell dir "`dta_file'" /TC > "`dirlist'"
+        
+        * Parse the date from dir output
+        cap infix str line 1-200 using "`dirlist'", clear
+        qui keep if regexm(line, "findsj\.dta")
+        
+        if _N > 0 {
+            local file_info = line[1]
+            * Extract date in format MM/DD/YYYY or DD/MM/YYYY
+            if regexm("`file_info'", "([0-9]{2})/([0-9]{2})/([0-9]{4})") {
+                local month = regexs(1)
+                local day = regexs(2)
+                local year = regexs(3)
+                
+                * Try parsing as MM/DD/YYYY first
+                local file_date = date("`month'/`day'/`year'", "MDY")
+                if missing(`file_date') {
+                    * Try DD/MM/YYYY
+                    local file_date = date("`day'/`month'/`year'", "DMY")
+                }
+                
+                local today = date("`current_date'", "DMY")
+                local days_diff = `today' - `file_date'
+                
+                * Check if database is older than 30 days
+                if `days_diff' > 30 {
+                    dis as text "{hline 70}"
+                    dis as result "  Database Update Available"
+                    dis as text "{hline 70}"
+                    dis as text "Your findsj database is " as result "`days_diff'" as text " days old (last updated: " as result %tdCY-N-D `file_date' as text ")"
+                    dis as text "A newer version may be available from the repository."
+                    dis ""
+                    dis as text "To update, run: " as result "findsj, update"
+                    dis as text "To skip this check: " as result "findsj ..., noupdatecheck"
+                    dis as text "{hline 70}"
+                }
+            }
+        }
+    }
+    else {
+        * Unix/Mac: use ls -l
+        tempfile filelist
+        qui shell ls -l "`dta_file'" > "`filelist'"
+        
+        * Parse modification time
+        cap infix str line 1-200 using "`filelist'", clear
+        if _N > 0 {
+            local file_info = line[1]
+            * Basic check - if we can extract a date, compare it
+            if regexm("`file_info'", "([A-Z][a-z]+)[ ]+([0-9]+)") {
+                * Simple heuristic: warn if file is old
+                dis as text "{hline 70}"
+                dis as result "  Reminder: Check for Database Updates"
+                dis as text "{hline 70}"
+                dis as text "To update to the latest Stata Journal articles, run:"
+                dis as result "  findsj, update"
+                dis as text "{hline 70}"
+            }
+        }
+    }
+end
+
+
+cap program drop findsj_update_db
+program define findsj_update_db
+    dis as text "{hline 70}"
+    dis as result "  Stata Journal Database Update"
+    dis as text "{hline 70}"
+    dis ""
+    
+    * Find findsj.ado location
+    qui findfile findsj.ado
+    local ado_dir = subinstr("`r(fn)'", "findsj.ado", "", .)
+    local dta_file "`ado_dir'findsj.dta"
+    
+    dis as text "Database location: " as result "`dta_file'"
+    dis ""
+    
+    * Backup existing database
+    cap confirm file "`dta_file'"
+    if _rc == 0 {
+        local backup_file "`ado_dir'findsj_backup_`c(current_date)'.dta"
+        local backup_file = subinstr("`backup_file'", " ", "_", .)
+        dis as text "Creating backup: " as result "`backup_file'"
+        cap copy "`dta_file'" "`backup_file'", replace
+    }
+    
+    * Try downloading from GitHub first (usually faster)
+    dis ""
+    dis as text "Attempting to download from GitHub..." _c
+    
+    local github_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/findsj.dta"
+    cap copy "`github_url'" "`dta_file'", replace
+    
+    if _rc == 0 {
+        dis as result " Success!"
+        
+        * Verify the file
+        cap use "`dta_file'", clear
+        if _rc == 0 {
+            qui count
+            local n_records = r(N)
+            dis ""
+            dis as text "{hline 70}"
+            dis as result "  Update Complete!"
+            dis as text "{hline 70}"
+            dis as text "Database updated successfully from GitHub"
+            dis as text "Total articles: " as result "`n_records'"
+            dis as text "Location: " as result "`dta_file'"
+            dis as text "{hline 70}"
+            exit
+        }
+        else {
+            dis as error " Downloaded file is corrupted."
+            dis as text "Trying alternative source..."
+        }
+    }
+    else {
+        dis as error " Failed."
+        dis as text "GitHub download failed (Error `=_rc')"
+    }
+    
+    * Try Gitee as backup (faster in China)
+    dis ""
+    dis as text "Attempting to download from Gitee..." _c
+    
+    local gitee_url "https://gitee.com/ChuChengWan/findsj/raw/main/findsj.dta"
+    cap copy "`gitee_url'" "`dta_file'", replace
+    
+    if _rc == 0 {
+        dis as result " Success!"
+        
+        * Verify the file
+        cap use "`dta_file'", clear
+        if _rc == 0 {
+            qui count
+            local n_records = r(N)
+            dis ""
+            dis as text "{hline 70}"
+            dis as result "  Update Complete!"
+            dis as text "{hline 70}"
+            dis as text "Database updated successfully from Gitee"
+            dis as text "Total articles: " as result "`n_records'"
+            dis as text "Location: " as result "`dta_file'"
+            dis as text "{hline 70}"
+            exit
+        }
+        else {
+            dis as error " Downloaded file is corrupted."
+        }
+    }
+    else {
+        dis as error " Failed."
+        dis as text "Gitee download failed (Error `=_rc')"
+    }
+    
+    * Both sources failed
+    dis ""
+    dis as text "{hline 70}"
+    dis as error "  Update Failed"
+    dis as text "{hline 70}"
+    dis as error "Could not download database from GitHub or Gitee"
+    dis as text "Possible reasons:"
+    dis as text "  - No internet connection"
+    dis as text "  - Firewall blocking access"
+    dis as text "  - Repository temporarily unavailable"
+    dis ""
+    dis as text "Manual download instructions:"
+    dis as text "  1. Visit: " as result "https://github.com/BlueDayDreeaming/findsj"
+    dis as text "  2. Download findsj.dta"
+    dis as text "  3. Copy to: " as result "`ado_dir'"
+    dis as text "{hline 70}"
+    
+    * Restore backup if update failed
+    cap confirm file "`backup_file'"
+    if _rc == 0 {
+        dis as text "Restoring backup..."
+        cap copy "`backup_file'" "`dta_file'", replace
+        if _rc == 0 {
+            dis as result "Previous database restored"
+        }
+    }
+end
+
 
 
