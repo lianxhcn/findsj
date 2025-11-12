@@ -19,7 +19,7 @@ syntax [anything(name=keywords id="keywords")] [, ///
     GETDOI ///
     Clear Debug ///
     SETPath(string) QUERYpath RESETpath ///
-    UPdate UPdatesource(string) NOUPdatecheck ///
+    UPdate UPdatesource(string) ///
     ]
 
 * Handle database update subcommand
@@ -27,11 +27,6 @@ if "`update'" != "" {
     * Use updatesource if specified, otherwise empty (will show usage)
     findsj_update_db "`updatesource'"
     exit
-}
-
-* Check for database updates (unless noupdatecheck is specified)
-if "`noupdatecheck'" == "" {
-    findsj_check_update
 }
 
 * Handle download path configuration subcommands
@@ -1004,131 +999,6 @@ end
 *===============================================================================
 * Database Update Check and Download Functions
 *===============================================================================
-
-cap program drop findsj_check_update
-program define findsj_check_update
-    * Find findsj.ado location
-    qui findfile findsj.ado
-    local ado_dir = subinstr("`r(fn)'", "findsj.ado", "", .)
-    local dta_file "`ado_dir'findsj.dta"
-    
-    * DEBUG: Show file being checked
-    noi dis as text "DEBUG: Checking file: `dta_file'"
-    
-    * Check if database exists
-    cap confirm file "`dta_file'"
-    if _rc {
-        dis as text "{hline 70}"
-        dis as error "Database file not found: findsj.dta"
-        dis as text "Please run: " as result "{stata findsj, update updatesource(both):findsj, update updatesource(both)}" as text " to download the latest database."
-        dis as text "{hline 70}"
-        exit
-    }
-    
-    * Get current date
-    local current_date = c(current_date)
-    local today = date("`current_date'", "DMY")
-    
-    * DEBUG: Show today's date
-    noi dis as text "DEBUG: Today = `today' (`current_date')"
-    
-    * Get database file timestamp (Windows format)
-    if c(os) == "Windows" {
-        tempfile dirlist
-        qui shell dir "`dta_file'" /TC > "`dirlist'"
-        
-        * DEBUG: Show dir output
-        noi type "`dirlist'"
-        
-        * Parse the date from dir output
-        cap infix str line 1-200 using "`dirlist'", clear
-        qui keep if regexm(line, "findsj\.dta")
-        
-        * DEBUG: Show matched lines
-        noi list line if _n <= 5
-        
-        if _N > 0 {
-            local file_info = line[1]
-            
-            * DEBUG: Show file info
-            noi dis as text "DEBUG: File info = `file_info'"
-            
-            * Extract date in format YYYY/MM/DD (Chinese Windows) or MM/DD/YYYY
-            if regexm("`file_info'", "([0-9]{4})/([0-9]{2})/([0-9]{2})") {
-                * Format: YYYY/MM/DD (e.g., 2025/09/28)
-                local year = regexs(1)
-                local month = regexs(2)
-                local day = regexs(3)
-                local file_date = mdy(`month', `day', `year')
-                noi dis as text "DEBUG: Matched YYYY/MM/DD - Year=`year' Month=`month' Day=`day' → file_date=`file_date'"
-            }
-            else if regexm("`file_info'", "([0-9]{2})/([0-9]{2})/([0-9]{4})") {
-                * Format: MM/DD/YYYY or DD/MM/YYYY
-                local month = regexs(1)
-                local day = regexs(2)
-                local year = regexs(3)
-                
-                * Try parsing as MM/DD/YYYY first
-                local file_date = date("`month'/`day'/`year'", "MDY")
-                if missing(`file_date') {
-                    * Try DD/MM/YYYY
-                    local file_date = date("`day'/`month'/`year'", "DMY")
-                }
-                noi dis as text "DEBUG: Matched MM/DD/YYYY → file_date=`file_date'"
-            }
-            else {
-                noi dis as error "DEBUG: No date pattern matched!"
-            }
-            
-            * Check if date was successfully parsed
-            noi dis as text "DEBUG: file_date=`file_date', today=`today'"
-            if !missing(`file_date') {
-                local days_diff = `today' - `file_date'
-                noi dis as text "DEBUG: days_diff = `days_diff'"
-                
-                * Check if database is older than 30 days
-                if `days_diff' > 30 {
-                    dis as text "{hline 70}"
-                    dis as result "  Database Update Available"
-                    dis as text "{hline 70}"
-                    dis as text "Your findsj database is " as result "`days_diff'" as text " days old"
-                    dis as text "(Last updated: " as result %tdCY-N-D `file_date' as text ")"
-                    dis as text "A newer version may be available from the repository."
-                    dis ""
-                    dis as text "Click to update:"
-                    dis as text "  {stata findsj, update updatesource(github):GitHub}  - International users"
-                    dis as text "  {stata findsj, update updatesource(gitee):Gitee}   - China users (faster)"
-                    dis as text "  {stata findsj, update updatesource(both):Try both} - Auto fallback"
-                    dis ""
-                    dis as text "To skip: add " as result "noupdatecheck" as text " option"
-                    dis as text "{hline 70}"
-                }
-            }
-        }
-    }
-    else {
-        * Unix/Mac: use ls -l
-        tempfile filelist
-        qui shell ls -l "`dta_file'" > "`filelist'"
-        
-        * Parse modification time
-        cap infix str line 1-200 using "`filelist'", clear
-        if _N > 0 {
-            local file_info = line[1]
-            * Basic check - if we can extract a date, compare it
-            if regexm("`file_info'", "([A-Z][a-z]+)[ ]+([0-9]+)") {
-                * Simple heuristic: warn if file is old
-                dis as text "{hline 70}"
-                dis as result "  Reminder: Check for Database Updates"
-                dis as text "{hline 70}"
-                dis as text "To update to the latest Stata Journal articles, run:"
-                dis as result "  findsj, update"
-                dis as text "{hline 70}"
-            }
-        }
-    }
-end
-
 
 cap program drop findsj_update_db
 program define findsj_update_db

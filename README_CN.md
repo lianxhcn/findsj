@@ -1,344 +1,330 @@
 # findsj
 
-搜索并引用 Stata Journal 文章
+**一键访问 Stata Journal 文章及其配套软件包**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Stata](https://img.shields.io/badge/Stata-14%2B-blue)](https://www.stata.com/)
-[![Version](https://img.shields.io/badge/version-1.0.3-brightgreen)](https://github.com/BlueDayDreeaming/findsj)
+[![Version](https://img.shields.io/badge/version-1.4.0-brightgreen)](https://github.com/BlueDayDreeaming/findsj)
 
 [English](README.md) | [中文文档](README_CN.md)
 
-## 概述
+---
 
-`findsj` 是一个 Stata 命令,用于通过关键词、作者姓名或文章标题搜索 **Stata Journal (SJ)** 和 **Stata Technical Bulletin (STB)** 的文章。它显示完整的文章信息,提供官方引文下载链接(BibTeX/RIS),并支持多种格式的批量导出功能。
+## 🎯 解决的痛点
 
-## 核心功能
+**问题：**  
+Stata Journal 的文章本身**并不会直接在期刊网站上附带对应的软件包**（ado 文件或 Stata 程序）下载链接。研究者必须：
+1. 阅读文章找到软件包名称
+2. 手动使用 `findit` 或 `ssc` 搜索软件包
+3. 期望软件包仍然可用且被正确索引
 
-- 🔍 **智能搜索**: 支持关键词、作者姓名或文章标题搜索
-- 📚 **官方引文**: 直接链接到 Stata Journal 的 BibTeX 和 RIS 下载
-- 📋 **批量导出**: 支持纯文本、Markdown 或 LaTeX 格式的批量导出
-- 🔗 **丰富链接**: 提供文章页面、PDF 下载、Google Scholar 和相关程序包链接
-- 🎯 **DOI 支持**: 可选的实时 DOI 获取功能
-- ⚡ **快速易用**: 简洁的语法和智能默认设置
+**我们的解决方案：**  
+`findsj` 提供**即时、可点击的访问**，在单次搜索中同时获取文章和配套软件包，节省您的时间和精力。
 
-## 安装方法
+---
 
-### 方法 1: 从 SSC 安装 (即将支持)
+## ✨ 主要功能
 
+- 🔍 **统一搜索**：搜索 1200+ 篇 Stata Journal 文章（按关键词、作者或标题）
+- 📦 **直接访问软件包**：一键安装配套软件包
+- 📄 **文献管理**：下载 BibTeX/RIS 引用文件
+- 🌐 **跨平台**：在 Windows和Mac上无缝运行
+- ⚡ **快速本地化**：内置数据库实现即时离线搜索
+- 🔗 **丰富集成**：链接到 PDF、Google Scholar 和文章页面
+
+---
+
+## 📸 快速示例
+
+### 示例 1：查找面板数据方法并安装软件包
 ```stata
-ssc install findsj, replace
+. findsj panel, n(3)
+  Searching ... Showing 3 of 101 articles
+[1] Testing and estimating structural breaks in time series and panel data in Stata
+    J. Ditzen, Y. Karavias, and J. Westerlund. (2025). Stata Journal 25(3)
+    Article | PDF | Google | Install | BibTeX | RIS
+[2] xtevent: Estimation and visualization in the linear panel event-study design
+    S. Freyaldenhoven, C. B. Hansen, J. P. Pérez, J. M. Shapiro, and C. Carreto. (2025). Stata Journal 25(1)
+    Article | PDF | Google | Install | BibTeX | RIS
+[3] xtpb: The pooled Bewley estimator of long-run relationships in dynamic heterogeneous panels
+    P. Asnani, A. Chudik, and B. Strackman. (2025). Stata Journal 25(1)
+    Article | PDF | Google | Install | BibTeX | RIS
+```
+👆 点击 **Install** 直接安装配套软件包！
+
+### 示例 2：按作者搜索
+```stata
+. findsj Baum, author n(2)
+  Searching ... Showing 2 of 24 articles
+[1] Estimating treatment effects when program participation is misreported
+    C. F. Baum, D. Tommasi, and L. Zhang. (2024). Stata Journal 24(4)
+    Article | PDF | Google | Install | BibTeX | RIS
+[2] Testing for time-varying Granger causality
+    C. F. Baum, S. Hurn, and J. Otero. (2022). Stata Journal 22(2)
+    Article | PDF | Google | Install | BibTeX | RIS
 ```
 
-### 方法 2: 从 GitHub 安装
-
+### 示例 3：查找机器学习工具
 ```stata
-net install findsj, from(https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/)
+. findsj machine learning, n(2)
+  Searching ... Showing 2 of 10 articles
+[1] Optimal policy learning using Stata
+    G. Cerulli. (2025). Stata Journal 25(2)
+    Article | PDF | Google | Install | BibTeX | RIS
+[2] ddml: Double/debiased machine learning in Stata
+    A. Ahrens, C. B. Hansen, M. E. Schaffer, and T. Wiemann. (2024). Stata Journal 24(1)
+    Article | PDF | Google | Install | BibTeX | RIS
 ```
 
-### 方法 3: 从 Gitee 安装 (国内镜像)
-
+### 示例 4：在文章标题中搜索
 ```stata
-net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/)
+. findsj differences, title n(2)
+  Searching ... Showing 2 of 10 articles
+[1] Avoiding the eyeballing fallacy: Visualizing statistical differences
+    E. Brini, S. T. Borgen, and N. T. Borgen. (2025). Stata Journal 25(1)
+    Article | PDF | Google | Install | BibTeX | RIS
+[2] On synthetic difference-in-differences and related estimation methods
+    D. Clarke, D. Pailañir, S. Athey, and G. Imbens. (2024). Stata Journal 24(4)
+    Article | PDF | Google | Install | BibTeX | RIS
 ```
 
-### 方法 4: 手动安装
+---
 
-1. 下载所有文件到本地目录
-2. 在 Stata 中运行:
+## 📥 安装
 
+### 快速安装（推荐）
+
+**国际用户（GitHub）：**
 ```stata
-net install findsj, from("本地路径")
+net install findsj, from(https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/) replace
 ```
 
-## 快速开始
+**中国用户（Gitee 镜像 - 更快）：**
+```stata
+net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/) replace
+```
+
+### 更新数据库
+
+安装后，更新至最新文章数据库：
+```stata
+findsj, update updatesource(github)    // 国际用户
+findsj, update updatesource(gitee)     // 中国用户（更快）
+findsj, update updatesource(both)      // 自动回退
+```
+
+---
+
+## 🚀 快速开始
 
 ### 1. 基本搜索
 
-关键词搜索:
-
+按关键词搜索（默认）：
 ```stata
 findsj machine learning
 ```
 
-作者搜索:
-
+按作者搜索：
 ```stata
-findsj, author(Mitchell)
+findsj Baum, author
 ```
 
-### 2. 获取引文
-
-点击结果表格中的 **BibTeX** 或 **RIS** 按钮,直接从 Stata Journal 网站下载引文。
-
-### 3. 批量导出
-
-导出所有引文到剪贴板:
-
+按标题搜索：
 ```stata
-findsj machine learning, export
+findsj treatment effects, title
 ```
 
-导出为 Markdown 格式:
-
+显示更多结果：
 ```stata
-findsj propensity score, export markdown
+findsj regression, n(20)        // 显示 20 条结果
+findsj panel, allresults        // 显示所有匹配结果
 ```
 
-导出为 LaTeX 格式:
+### 2. 下载引用文件
 
+点击搜索结果中的 **BibTeX** 或 **RIS** 按钮下载引用文件。
+
+配置下载位置：
 ```stata
-findsj difference-in-differences, export latex
+findsj, setpath(D:/References)    // 设置自定义路径
+findsj, querypath                  // 查看当前路径
+findsj, resetpath                  // 重置为默认路径
 ```
 
-## 语法
+### 3. 导出到剪贴板
+
+以不同格式导出引用：
+```stata
+findsj propensity score, markdown    // Markdown 格式
+findsj panel data, latex             // LaTeX 格式
+findsj regression, plain             // 纯文本格式
+```
+
+结果会自动复制到剪贴板，可直接粘贴到文档中。
+
+---
+
+## 📚 完整语法
 
 ```stata
 findsj [关键词] [, 选项]
 ```
 
-### 选项说明
-
-#### 搜索选项
-- `author(姓名)` - 按作者姓名搜索
-- `title(文本)` - 按文章标题搜索
-- `issue(期号)` - 限定特定期号 (例如 "20(4)")
-- `from(年份)` - 最早发表年份
-- `to(年份)` - 最晚发表年份
-
-#### 显示选项
-- `detail` - 显示详细文章信息
-- `nolink` - 隐藏结果中的可点击链接
-- `max(数字)` - 最大显示结果数 (默认: 20, 0 = 全部)
-
-#### 导出选项
-- `export` - 导出所有结果到剪贴板(纯文本格式)
-- `markdown` - 导出为 Markdown 格式
-- `latex` - 导出为 LaTeX 格式
-
-#### 高级选项
-- `verbose` - 显示详细操作信息
-- `getdoi` - 从 Stata Journal 实时获取 DOI (较慢)
-
-## 使用示例
-
-### 示例 1: 关键词搜索
-
-```stata
-findsj regression
-```
-
-### 示例 2: 作者搜索及详细信息
-
-```stata
-findsj, author(Nichols) detail
-```
-
-### 示例 3: 特定期号搜索
-
-```stata
-findsj, issue(20(4))
-```
-
-### 示例 4: 年份范围搜索
-
-```stata
-findsj panel data, from(2015) to(2020)
-```
-
-### 示例 5: 导出引文
-
-```stata
-findsj matching, export markdown
-```
-
-### 示例 6: 标题搜索
-
-```stata
-findsj, title(treatment effects)
-```
-
-### 示例 7: 完整信息含 DOI
-
-```stata
-findsj propensity score, detail getdoi
-```
-
-### 示例 8: 组合条件搜索
-
-```stata
-findsj causal inference, author(Angrist) from(2000) detail
-```
-
-## 功能详解
-
-### 1. 搜索功能
-
-- **灵活搜索**: 组合关键词和选项实现精确搜索
-- **智能匹配**: 不区分大小写的部分匹配
-- **多字段搜索**: 在标题、作者、摘要和关键词中搜索
-- **日期筛选**: 按发表年份范围限定结果
-
-### 2. 官方引文下载
-
-结果表格为每篇文章提供可点击按钮:
-
-- **BibTeX**: 直接从 Stata Journal 下载 BibTeX 引文
-- **RIS**: 下载 RIS 格式引文(供参考文献管理软件使用)
-
-这些链接连接到 Stata Journal 官方引文服务:
-`https://www.stata-journal.com/ris.php?doi={文章doi}`
-
-### 3. 批量引文导出
-
-一次性导出多个引文到剪贴板:
-
-- **纯文本**: 简单的引文列表
-- **Markdown**: 适用于 Markdown 文档的格式
-- **LaTeX**: 可直接用于 LaTeX 参考文献
-
-导出后,使用 `Ctrl+V` (Windows) 或 `Cmd+V` (Mac) 直接粘贴到文档中。
-
-### 4. 丰富的信息展示
-
-每个搜索结果包含:
-
-- 文章标题和作者
-- 发表信息(期刊、年份、卷期、页码)
-- DOI 和相关链接
-- 摘要和关键词
-- 相关 Stata 程序包信息
-
-### 5. 可点击链接
-
-直接访问:
-
-- Stata Journal 网站上的文章 PDF
-- 包含完整详情的文章页面
-- Google Scholar 上的文章搜索
-- 相关 Stata 程序包下载
-
-## 数据来源
-
-`findsj` 使用 Stata Journal 官方文章数据库,包括:
-
-- 所有 **Stata Journal (SJ)** 文章
-- 所有 **Stata Technical Bulletin (STB)** 文章
-- 定期更新最新发表的文章
-- 完整的引文信息和 DOI
-
-## 系统要求
-
-- Stata 14.0 或更高版本
-- 活动的互联网连接(用于 DOI 获取和引文下载)
-
-## 版本历史
-
-### 版本 1.0.3 (2025-10-22)
-- 将复制按钮替换为官方 BibTeX/RIS 下载链接
-- 移除 `findsj_copy` 子命令
-- 添加 `getdoi` 选项用于实时 DOI 获取
-- 移除剪贴板依赖以提升性能
-- 更新文档和示例
-
-### 版本 1.0.2 (2025-10-20)
-- 添加三按钮引文复制功能
-- 改进错误处理
-
-### 版本 1.0.1 (2025-10-18)
-- 初始版本,包含基本搜索和导出功能
-
-## 故障排除
-
-### 引文无法下载?
-
-- 确保有活动的互联网连接
-- 检查文章是否存在 DOI
-- 尝试重新点击链接或使用不同浏览器
-
-### DOI 获取速度慢?
-
-- 仅在需要时使用 `getdoi` 选项
-- 数据库中的默认 DOI 通常已足够
-
-### 导出不工作?
-
-- 确保至少有一个搜索结果
-- 检查剪贴板访问权限是否可用
-- 尝试不同的导出格式
-
-## 与 findit 的比较
-
-| 功能 | findsj | findit |
-|------|--------|--------|
-| 数据源 | 仅 Stata Journal | 所有 Stata 资源 |
-| 引文 | 是 (BibTeX/RIS) | 否 |
-| 批量导出 | 是 | 否 |
-| 作者搜索 | 是 | 有限 |
-| 年份筛选 | 是 | 否 |
-| DOI 链接 | 是 | 否 |
-| 详细信息 | 是 | 基本 |
-
-## 未来计划
-
-- [ ] 添加摘要搜索功能
-- [ ] 支持其他引文格式(如 APA、Chicago)
-- [ ] 与参考文献管理软件集成
-- [ ] 支持本地数据库的离线模式
-- [ ] 基于关键词的文章推荐
-
-## 贡献
-
-欢迎贡献!请随时在 GitHub 上提交问题或拉取请求。
-
-## 支持
-
-如有问题、错误报告或功能请求:
-
-- **邮箱**: arlionn@163.com
-- **GitHub Issues**: https://github.com/BlueDayDreeaming/findsj/issues
-- **Gitee Issues**: https://gitee.com/ChuChengWan/findsj/issues
-
-## 数据库自动更新
-
-本仓库使用 GitHub Actions 实现**数据库自动更新**：
-
-- 🤖 **定时更新**: 每月1号自动从 Stata Journal 官网获取最新文章
-- 📦 **自动提交**: 新文章会自动添加到 `findsj.dta` 并提交
-- 🔄 **手动触发**: 也可以在 GitHub Actions 页面手动触发更新
-- 🔁 **Gitee 同步**: 自动同步到 Gitee 镜像仓库
-
-**详细说明**：
-- [GitHub Actions 自动更新文档](.github/AUTO_UPDATE.md)
-- [Gitee 同步配置说明](.github/GITEE_SYNC.md)
-
-## 引用
-
-如果您在研究中使用 `findsj`,请引用:
-
-```
-连玉君, 万储诚 (2025). findsj: 搜索并引用 Stata Journal 文章.
-Stata 软件包. 版本 1.0.3.
-可从以下网址获取: https://github.com/BlueDayDreeaming/findsj
-```
-
-## 许可证
-
-MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
-
-版权所有 (c) 2025 连玉君, 万储诚
-
-## 作者
-
-**连玉君**  
-中山大学,广州,中国  
-邮箱: arlionn@163.com
-
-**万储诚**  
-中山大学,广州,中国  
-邮箱: chucheng.wan@outlook.com  
-GitHub: [BlueDayDreeaming](https://github.com/BlueDayDreeaming)  
-Gitee: [ChuChengWan](https://gitee.com/ChuChengWan)
+### 搜索选项
+- `author` - 按作者姓名搜索
+- `title` - 按文章标题搜索
+- `keyword` - 按关键词搜索（默认，可省略）
+
+### 显示选项
+- `n(#)` - 显示结果数量（默认：10）
+- `allresults` - 显示所有匹配结果
+- `nobrowser` - 隐藏可点击链接
+- `nopdf` - 隐藏 PDF 链接
+- `nopkg` - 隐藏软件包安装链接
+
+### 导出选项
+- `markdown` - 以 Markdown 格式导出引用
+- `latex`（或 `tex`）- 以 LaTeX 格式导出引用
+- `plain` - 以纯文本格式导出引用
+- `noclip` - 不复制到剪贴板（仅显示）
+
+### 路径管理
+- `setpath(路径)` - 设置自定义下载目录
+- `querypath` - 显示当前下载路径
+- `resetpath` - 重置为默认路径
+
+### 数据库管理
+- `update` - 更新文章数据库（需配合 `updatesource()` 使用）
+- `updatesource(来源)` - 指定更新来源：
+  - `github` - 从 GitHub 下载（国际用户）
+  - `gitee` - 从 Gitee 下载（中国用户，更快）
+  - `both` - 先尝试 GitHub，失败后回退到 Gitee
+
+### 高级选项
+- `getdoi` - 从 Stata Journal 网站实时获取 DOI（较慢）
+- `debug` - 显示调试信息
 
 ---
 
-*用 ❤️ 为 Stata 社区打造*
+## 💡 高级示例
+
+### 示例 1：查找并安装软件包
+
+搜索双重差分方法，然后点击 **Install**：
+```stata
+findsj difference, n(5)
+```
+
+### 示例 2：为文献综述下载所有引用
+
+搜索并下载所有匹配文章的 BibTeX 文件：
+```stata
+findsj, setpath(D:/MyPaper/References)
+findsj causal inference
+```
+点击 **BibTeX** 按钮将引用下载到您的参考文献文件夹。
+
+### 示例 3：为手稿导出引用列表
+
+导出格式化的引用供论文使用：
+```stata
+findsj instrumental variable, latex allresults
+```
+直接将输出粘贴到您的 LaTeX 文档中。
+
+### 示例 4：作者文献目录
+
+获取特定作者的所有出版物：
+```stata
+findsj "Christopher F. Baum", author allresults
+```
+
+### 示例 5：定期更新数据库
+
+保持本地数据库为最新：
+```stata
+findsj, update updatesource(both)
+```
+
+---
+
+## 🛠️ 系统要求
+
+- **Stata**：14.0 或更高版本
+- **互联网**：数据库更新和实时功能需要
+- **操作系统**：Windows、macOS 或 Linux
+- **工具**：
+  - Windows：PowerShell（内置）
+  - Mac/Linux：curl（大多数系统预装）
+
+---
+
+## 🔄 数据库覆盖范围
+
+`findsj` 数据库包含：
+- **Stata Journal (SJ)**：所有卷期（2001 年至今）
+- **Stata Technical Bulletin (STB)**：完整存档（1991-2001）
+- **总计**：1200+ 篇文章及完整元数据
+- **更新**：通过 `findsj, update` 命令手动更新
+
+最后数据库更新：2025 年 11 月（第 25 卷第 3 期）
+
+---
+
+## 📖 工作原理
+
+1. **本地数据库**：`findsj` 使用包含文章元数据的本地 `.dta` 数据库
+2. **快速搜索**：所有搜索都在本地执行，实现即时结果
+3. **智能链接**：提取软件包名称并链接到安装源
+4. **跨平台**：针对每个操作系统的原生文件操作确保兼容性
+
+---
+
+## 🤝 贡献
+
+欢迎贡献！您可以：
+- 通过 [GitHub Issues](https://github.com/BlueDayDreeaming/findsj/issues) 报告错误或请求功能
+- 提交改进的拉取请求
+- 分享您的使用案例和反馈
+
+---
+
+## 📄 许可证
+
+本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
+
+---
+
+## 🙏 致谢
+
+- 数据来源：[Stata Journal](https://www.stata-journal.com/)
+- 受全球实证研究者需求启发
+- 为 Stata 社区用 ❤️ 构建
+
+---
+
+## 📮 联系方式
+
+- **GitHub**：[BlueDayDreeaming/findsj](https://github.com/BlueDayDreeaming/findsj)
+- **Gitee 镜像**：[ChuChengWan/findsj](https://gitee.com/ChuChengWan/findsj)
+- **问题反馈**：在 GitHub 上报告错误或请求功能
+
+---
+
+## 🔖 引用
+
+如果您在研究中使用 `findsj`，请引用：
+
+```bibtex
+@software{findsj2025,
+  author = {Your Name},
+  title = {findsj: Search and Access Stata Journal Articles and Packages},
+  year = {2025},
+  url = {https://github.com/BlueDayDreeaming/findsj},
+  version = {1.4.0}
+}
+```
+
+---
+
+**祝研究顺利！🎉**
