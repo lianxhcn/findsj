@@ -305,25 +305,14 @@ findsj, update updatesource(both)
 
 ## 📮 联系方式
 
+**作者：**
+- **连玉君** - [arlionn@163.com](mailto:arlionn@163.com)
+- **万楚呈** - [chucheng.wan@outlook.com](mailto:chucheng.wan@outlook.com)
+
+**项目链接：**
 - **GitHub**：[BlueDayDreeaming/findsj](https://github.com/BlueDayDreeaming/findsj)
 - **Gitee 镜像**：[ChuChengWan/findsj](https://gitee.com/ChuChengWan/findsj)
 - **问题反馈**：在 GitHub 上报告错误或请求功能
-
----
-
-## 🔖 引用
-
-如果您在研究中使用 `findsj`，请引用：
-
-```bibtex
-@software{findsj2025,
-  author = {Your Name},
-  title = {findsj: Search and Access Stata Journal Articles and Packages},
-  year = {2025},
-  url = {https://github.com/BlueDayDreeaming/findsj},
-  version = {1.4.0}
-}
-```
 
 ---
 

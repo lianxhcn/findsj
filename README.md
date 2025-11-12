@@ -305,25 +305,14 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) file for 
 
 ## 📮 Contact
 
+**Authors:**
+- **Yujun Lian** - [arlionn@163.com](mailto:arlionn@163.com)
+- **Chucheng Wan** - [chucheng.wan@outlook.com](mailto:chucheng.wan@outlook.com)
+
+**Project Links:**
 - **GitHub**: [BlueDayDreeaming/findsj](https://github.com/BlueDayDreeaming/findsj)
 - **Gitee Mirror**: [ChuChengWan/findsj](https://gitee.com/ChuChengWan/findsj)
 - **Issues**: Report bugs or request features on GitHub
-
----
-
-## 🔖 Citation
-
-If you use `findsj` in your research, please cite:
-
-```bibtex
-@software{findsj2025,
-  author = {Your Name},
-  title = {findsj: Search and Access Stata Journal Articles and Packages},
-  year = {2025},
-  url = {https://github.com/BlueDayDreeaming/findsj},
-  version = {1.4.0}
-}
-```
 
 ---
 
