@@ -1026,12 +1026,16 @@ program define findsj_check_update
     file open `fh' using "`dta_file'", read binary
     file close `fh'
     
-    * Check last update timestamp
+    * Check update reminder history
     local update_check_file "`c(sysdir_personal)'findsj_lastcheck.txt"
+    local reminder_count_file "`c(sysdir_personal)'findsj_reminder_count.txt"
     local current_date = c(current_date)
     local should_check = 1
     
-    * Read last check date
+    * Read last check date and reminder count
+    local last_check ""
+    local reminder_count = 0
+    
     cap confirm file "`update_check_file'"
     if _rc == 0 {
         file open `fh' using "`update_check_file'", read text
@@ -1045,6 +1049,22 @@ program define findsj_check_update
         * Only check once per day
         if `today' == `last_date' {
             local should_check = 0
+        }
+        
+        * Check if it's a new month (reset reminder count)
+        if month(`today') != month(`last_date') | year(`today') != year(`last_date') {
+            local reminder_count = 0
+        }
+        else {
+            * Read reminder count for this month
+            cap confirm file "`reminder_count_file'"
+            if _rc == 0 {
+                file open `fh' using "`reminder_count_file'", read text
+                file read `fh' count_str
+                file close `fh'
+                cap local reminder_count = real("`count_str'")
+                if missing(`reminder_count') local reminder_count = 0
+            }
         }
     }
     
@@ -1082,15 +1102,29 @@ program define findsj_check_update
                 local today = date("`current_date'", "DMY")
                 local days_diff = `today' - `file_date'
                 
-                * Check if database is older than 30 days
-                if `days_diff' > 30 {
+                * Check if database is older than 30 days AND reminder count < 2
+                if `days_diff' > 30 & `reminder_count' < 2 {
                     dis as text "{hline 70}"
                     dis as result "  Database Update Available"
                     dis as text "{hline 70}"
-                    dis as text "Your findsj database is " as result "`days_diff'" as text " days old (last updated: " as result %tdCY-N-D `file_date' as text ")"
+                    dis as text "Your findsj database is " as result "`days_diff'" as text " days old"
+                    dis as text "(Last updated: " as result %tdCY-N-D `file_date' as text ")"
                     dis as text "A newer version may be available from the repository."
                     dis ""
-                    dis as text "To update, run: " as result "findsj, update"
+                    dis as text "Would you like to update now? (Reminder " as result "`=`reminder_count'+1'" as text "/2 this month)"
+                    dis as text "  " as result "y" as text " = Yes, update now"
+                    dis as text "  " as result "n" as text " = No, remind me later"
+                    dis as text "{hline 70}"
+                    
+                    * Increment reminder count
+                    local reminder_count = `reminder_count' + 1
+                    file open `fh' using "`reminder_count_file'", write replace
+                    file write `fh' "`reminder_count'"
+                    file close `fh'
+                    
+                    * Note: User will need to manually run findsj, update
+                    * We cannot use interactive input in a way that works well with all Stata versions
+                    dis as text "To update: " as result "findsj, update"
                     dis as text "To skip this check: " as result "findsj ..., noupdatecheck"
                     dis as text "{hline 70}"
                 }
@@ -1136,90 +1170,98 @@ program define findsj_update_db
     dis as text "Database location: " as result "`dta_file'"
     dis ""
     
+    * Ask user to choose download source
+    dis as text "Please select download source:"
+    dis as text "  " as result "1" as text " = GitHub (Recommended for international users)"
+    dis as text "  " as result "2" as text " = Gitee (Recommended for users in China)"
+    dis as text "  " as result "3" as text " = Try both (GitHub first, then Gitee if failed)"
+    dis as text "{hline 70}"
+    dis as text "Enter your choice (1/2/3): " _request(choice)
+    
+    * Validate choice
+    if "`choice'" != "1" & "`choice'" != "2" & "`choice'" != "3" {
+        dis as error "Invalid choice. Please enter 1, 2, or 3."
+        exit 198
+    }
+    
     * Define download sources
-    * Note: Users can manually try the other source if one fails
     local github_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/findsj.dta"
     local gitee_url "https://gitee.com/ChuChengWan/findsj/raw/main/findsj.dta"
     
-    * Try GitHub first (generally faster for international users)
-    dis as text "Downloading from GitHub..." _c
+    local sources ""
+    local source_names ""
     
-    cap copy "`github_url'" "`dta_file'", replace
-    
-    if _rc == 0 {
-        dis as result " Success!"
-        
-        * Verify the file
-        cap use "`dta_file'", clear
-        if _rc == 0 {
-            qui count
-            local n_records = r(N)
-            dis ""
-            dis as text "{hline 70}"
-            dis as result "  Update Complete!"
-            dis as text "{hline 70}"
-            dis as text "Database updated successfully from GitHub"
-            dis as text "Total articles: " as result "`n_records'"
-            dis as text "Location: " as result "`dta_file'"
-            dis as text "{hline 70}"
-            exit
-        }
-        else {
-            dis as error " File corrupted."
-            dis as text "Trying Gitee..."
-        }
+    if "`choice'" == "1" {
+        local sources "`github_url'"
+        local source_names "GitHub"
+    }
+    else if "`choice'" == "2" {
+        local sources "`gitee_url'"
+        local source_names "Gitee"
     }
     else {
-        dis as error " Failed."
-        dis as text "Trying Gitee (faster for users in China)..."
+        local sources "`github_url' `gitee_url'"
+        local source_names "GitHub Gitee"
     }
     
-    * Try Gitee as backup
-    dis ""
-    dis as text "Downloading from Gitee..." _c
-    
-    cap copy "`gitee_url'" "`dta_file'", replace
-    
-    if _rc == 0 {
-        dis as result " Success!"
+    * Try each source
+    local n_sources = wordcount("`sources'")
+    forvalues i = 1/`n_sources' {
+        local source_url = word("`sources'", `i')
+        local source_name = word("`source_names'", `i')
         
-        * Verify the file
-        cap use "`dta_file'", clear
+        dis ""
+        dis as text "Downloading from `source_name'..." _c
+        
+        cap copy "`source_url'" "`dta_file'", replace
+        
         if _rc == 0 {
-            qui count
-            local n_records = r(N)
-            dis ""
-            dis as text "{hline 70}"
-            dis as result "  Update Complete!"
-            dis as text "{hline 70}"
-            dis as text "Database updated successfully from Gitee"
-            dis as text "Total articles: " as result "`n_records'"
-            dis as text "Location: " as result "`dta_file'"
-            dis as text "{hline 70}"
-            exit
+            dis as result " Success!"
+            
+            * Verify the file
+            cap use "`dta_file'", clear
+            if _rc == 0 {
+                qui count
+                local n_records = r(N)
+                dis ""
+                dis as text "{hline 70}"
+                dis as result "  Update Complete!"
+                dis as text "{hline 70}"
+                dis as text "Database updated successfully from `source_name'"
+                dis as text "Total articles: " as result "`n_records'"
+                dis as text "Location: " as result "`dta_file'"
+                dis as text "{hline 70}"
+                exit
+            }
+            else {
+                dis as error " File corrupted."
+                if `i' < `n_sources' {
+                    dis as text "Trying next source..."
+                }
+            }
         }
         else {
-            dis as error " File corrupted."
+            dis as error " Failed."
+            if `i' < `n_sources' {
+                dis as text "Trying next source..."
+            }
         }
     }
-    else {
-        dis as error " Failed."
-    }
     
-    * Both sources failed
+    * All sources failed
     dis ""
     dis as text "{hline 70}"
     dis as error "  Update Failed"
     dis as text "{hline 70}"
-    dis as error "Could not download database from GitHub or Gitee"
+    dis as error "Could not download database from selected source(s)"
     dis as text "Possible reasons:"
     dis as text "  - No internet connection"
-    dis as text "  - Firewall blocking both sites"
+    dis as text "  - Firewall blocking access"
     dis as text "  - Repository temporarily unavailable"
     dis ""
     dis as text "Manual download instructions:"
     dis as text "  1. Visit: " as result "https://github.com/BlueDayDreeaming/findsj"
-    dis as text "     (China users: " as result "https://gitee.com/ChuChengWan/findsj" as text ")"
+    dis as text "     (China: " as result "https://gitee.com/ChuChengWan/findsj" as text ")"
     dis as text "  2. Download findsj.dta"
     dis as text "  3. Copy to: " as result "`ado_dir'"
     dis as text "{hline 70}"
