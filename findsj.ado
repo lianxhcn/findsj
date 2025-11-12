@@ -1012,6 +1012,9 @@ program define findsj_check_update
     local ado_dir = subinstr("`r(fn)'", "findsj.ado", "", .)
     local dta_file "`ado_dir'findsj.dta"
     
+    * DEBUG: Show file being checked
+    noi dis as text "DEBUG: Checking file: `dta_file'"
+    
     * Check if database exists
     cap confirm file "`dta_file'"
     if _rc {
@@ -1026,17 +1029,30 @@ program define findsj_check_update
     local current_date = c(current_date)
     local today = date("`current_date'", "DMY")
     
+    * DEBUG: Show today's date
+    noi dis as text "DEBUG: Today = `today' (`current_date')"
+    
     * Get database file timestamp (Windows format)
     if c(os) == "Windows" {
         tempfile dirlist
         qui shell dir "`dta_file'" /TC > "`dirlist'"
         
+        * DEBUG: Show dir output
+        noi type "`dirlist'"
+        
         * Parse the date from dir output
         cap infix str line 1-200 using "`dirlist'", clear
         qui keep if regexm(line, "findsj\.dta")
         
+        * DEBUG: Show matched lines
+        noi list line if _n <= 5
+        
         if _N > 0 {
             local file_info = line[1]
+            
+            * DEBUG: Show file info
+            noi dis as text "DEBUG: File info = `file_info'"
+            
             * Extract date in format YYYY/MM/DD (Chinese Windows) or MM/DD/YYYY
             if regexm("`file_info'", "([0-9]{4})/([0-9]{2})/([0-9]{2})") {
                 * Format: YYYY/MM/DD (e.g., 2025/09/28)
@@ -1044,6 +1060,7 @@ program define findsj_check_update
                 local month = regexs(2)
                 local day = regexs(3)
                 local file_date = mdy(`month', `day', `year')
+                noi dis as text "DEBUG: Matched YYYY/MM/DD - Year=`year' Month=`month' Day=`day' → file_date=`file_date'"
             }
             else if regexm("`file_info'", "([0-9]{2})/([0-9]{2})/([0-9]{4})") {
                 * Format: MM/DD/YYYY or DD/MM/YYYY
@@ -1057,11 +1074,17 @@ program define findsj_check_update
                     * Try DD/MM/YYYY
                     local file_date = date("`day'/`month'/`year'", "DMY")
                 }
+                noi dis as text "DEBUG: Matched MM/DD/YYYY → file_date=`file_date'"
+            }
+            else {
+                noi dis as error "DEBUG: No date pattern matched!"
             }
             
             * Check if date was successfully parsed
+            noi dis as text "DEBUG: file_date=`file_date', today=`today'"
             if !missing(`file_date') {
                 local days_diff = `today' - `file_date'
+                noi dis as text "DEBUG: days_diff = `days_diff'"
                 
                 * Check if database is older than 30 days
                 if `days_diff' > 30 {
