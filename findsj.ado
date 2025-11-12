@@ -1136,12 +1136,43 @@ program define findsj_update_db
     dis as text "Database location: " as result "`dta_file'"
     dis ""
     
-    * Try downloading from GitHub first (usually faster)
-    dis ""
-    dis as text "Attempting to download from GitHub..." _c
+    * Quick connectivity test to determine best source
+    dis as text "Testing connectivity..." _c
     
-    local github_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/findsj.dta"
-    cap copy "`github_url'" "`dta_file'", replace
+    local use_gitee = 0
+    
+    * Try a quick test download from GitHub (small file, short timeout)
+    tempfile test_github
+    cap qui copy "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/README.md" "`test_github'", replace timeout(3)
+    
+    if _rc != 0 {
+        * GitHub not accessible or too slow, prefer Gitee
+        local use_gitee = 1
+        dis as text " GitHub slow/blocked, using Gitee"
+    }
+    else {
+        dis as text " OK"
+    }
+    
+    * Define download sources (order based on connectivity test)
+    if `use_gitee' {
+        local source1_name "Gitee"
+        local source1_url "https://gitee.com/ChuChengWan/findsj/raw/main/findsj.dta"
+        local source2_name "GitHub"
+        local source2_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/findsj.dta"
+    }
+    else {
+        local source1_name "GitHub"
+        local source1_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/findsj.dta"
+        local source2_name "Gitee"
+        local source2_url "https://gitee.com/ChuChengWan/findsj/raw/main/findsj.dta"
+    }
+    
+    * Try primary source
+    dis ""
+    dis as text "Downloading from `source1_name'..." _c
+    
+    cap copy "`source1_url'" "`dta_file'", replace timeout(10)
     
     if _rc == 0 {
         dis as result " Success!"
@@ -1155,7 +1186,7 @@ program define findsj_update_db
             dis as text "{hline 70}"
             dis as result "  Update Complete!"
             dis as text "{hline 70}"
-            dis as text "Database updated successfully from GitHub"
+            dis as text "Database updated successfully from `source1_name'"
             dis as text "Total articles: " as result "`n_records'"
             dis as text "Location: " as result "`dta_file'"
             dis as text "{hline 70}"
@@ -1167,16 +1198,14 @@ program define findsj_update_db
         }
     }
     else {
-        dis as error " Failed."
-        dis as text "GitHub download failed (Error `=_rc')"
+        dis as error " Failed (Error `=_rc')"
     }
     
-    * Try Gitee as backup (faster in China)
+    * Try secondary source
     dis ""
-    dis as text "Attempting to download from Gitee..." _c
+    dis as text "Downloading from `source2_name'..." _c
     
-    local gitee_url "https://gitee.com/ChuChengWan/findsj/raw/main/findsj.dta"
-    cap copy "`gitee_url'" "`dta_file'", replace
+    cap copy "`source2_url'" "`dta_file'", replace timeout(10)
     
     if _rc == 0 {
         dis as result " Success!"
@@ -1190,7 +1219,7 @@ program define findsj_update_db
             dis as text "{hline 70}"
             dis as result "  Update Complete!"
             dis as text "{hline 70}"
-            dis as text "Database updated successfully from Gitee"
+            dis as text "Database updated successfully from `source2_name'"
             dis as text "Total articles: " as result "`n_records'"
             dis as text "Location: " as result "`dta_file'"
             dis as text "{hline 70}"
@@ -1201,8 +1230,7 @@ program define findsj_update_db
         }
     }
     else {
-        dis as error " Failed."
-        dis as text "Gitee download failed (Error `=_rc')"
+        dis as error " Failed (Error `=_rc')"
     }
     
     * Both sources failed
@@ -1218,6 +1246,7 @@ program define findsj_update_db
     dis ""
     dis as text "Manual download instructions:"
     dis as text "  1. Visit: " as result "https://github.com/BlueDayDreeaming/findsj"
+    dis as text "     or: " as result "https://gitee.com/ChuChengWan/findsj"
     dis as text "  2. Download findsj.dta"
     dis as text "  3. Copy to: " as result "`ado_dir'"
     dis as text "{hline 70}"
