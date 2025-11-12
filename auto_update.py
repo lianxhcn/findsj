@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Stata Journal 自动更新脚本
-通过检查最新的artid编号来发现新文章
+从搜索页面按HTML顺序（从前往后）检查artid，找出新文章
 """
 
 import pandas as pd
@@ -15,32 +15,81 @@ import shutil
 
 # ==================== 配置 ====================
 DTA_FILE = 'findsj.dta'
-MAX_ARTID_TO_CHECK = 50  # 检查最近N个artid编号
+SEARCH_URL = 'https://www.stata-journal.com/sjsearch.html?choice=keyword&q='  # 搜索所有文章
 SLEEP_TIME = 0.5  # 请求间隔（秒）
 
 # ==================== 工具函数 ====================
 
-def fetch_article_info(artid):
-    """从网页获取文章信息"""
-    url = f"https://www.stata-journal.com/article.html?article={artid}"
+def fetch_all_articles_from_search():
+    """从搜索页面获取所有文章的artid（按HTML顺序，从新到旧）"""
+    print("    从搜索页面获取文章列表...")
+    print(f"    URL: {SEARCH_URL}")
+    
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    
+    try:
+        response = requests.get(SEARCH_URL, headers=headers, timeout=30)
+        if response.status_code != 200:
+            print(f"    错误: HTTP {response.status_code}")
+            return []
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # 查找所有包含 article= 的链接
+        article_links = soup.find_all('a', href=re.compile(r'article\.html\?article='))
+        
+        artids = []
+        seen_clean_ids = set()
+        
+        for link in article_links:
+            href = link.get('href', '')
+            match = re.search(r'article=([^"&]+)', href)
+            if match:
+                artid_raw = match.group(1)
+                # 保留原始 artid（包括可能的 BOM），用于访问网页
+                # 同时记录清理后的版本用于去重
+                artid_clean = artid_raw.replace('\ufeff', '').replace('%EF%BB%BF', '').strip()
+                
+                if artid_clean not in seen_clean_ids:
+                    artids.append(artid_raw)  # 保存原始版本
+                    seen_clean_ids.add(artid_clean)
+        
+        print(f"    找到 {len(artids)} 个唯一的 artid")
+        return artids
+        
+    except Exception as e:
+        print(f"    错误: {e}")
+        return []
+
+def fetch_article_full_info(artid):
+    """获取单篇文章的完整信息"""
+    # 清理 artid：移除 BOM 和其他不可见字符
+    artid_clean = artid.replace('\ufeff', '').replace('\u200b', '').strip()
+    
+    # 对于包含 BOM 的 artid，需要使用 URL 编码的版本
+    # BOM 字符 \ufeff 的 URL 编码是 %EF%BB%BF
+    if '\ufeff' in artid:
+        artid_url = artid.replace('\ufeff', '%EF%BB%BF')
+    else:
+        artid_url = artid_clean
+    
+    url = f"https://www.stata-journal.com/article.html?article={artid_url}"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
     try:
         response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 404:
-            return None  # 文章不存在
         if response.status_code != 200:
             return None
         
         soup = BeautifulSoup(response.content, 'html.parser')
-        info = {'artid': artid}
+        info = {'artid': artid_clean}  # 存储时使用清理后的 artid
         
         # 获取标题
         h2_tag = soup.find('h2')
         if h2_tag:
             info['title'] = h2_tag.get_text(strip=True)
         else:
-            return None  # 没有标题说明这不是有效的文章页面
+            return None
         
         # 获取作者
         author_div = soup.find('div', class_='authorlist')
@@ -64,10 +113,17 @@ def fetch_article_info(artid):
             
             if volume_match:
                 info['volume'] = int(volume_match.group(1))
-                # year = volume (从2001年第1卷开始，所以 year = 2000 + volume)
                 info['year'] = 2000 + info['volume']
             if number_match:
                 info['number'] = int(number_match.group(1))
+        
+        # 获取页码
+        page_span = soup.find('span', class_='pages')
+        if page_span:
+            page_text = page_span.get_text(strip=True)
+            page_match = re.search(r'pp\.\s*(.+)', page_text)
+            if page_match:
+                info['page'] = page_match.group(1).strip()
         
         return info
     except Exception as e:
@@ -75,49 +131,42 @@ def fetch_article_info(artid):
         return None
 
 def find_new_articles(existing_df):
-    """查找新文章"""
+    """查找新文章：从搜索页面按HTML顺序检查artid"""
     # 获取现有的所有artid
-    existing_artids = set(existing_df['artid'].dropna().astype(str).unique())
+    existing_artids = set(existing_df['artid'].dropna().astype(str).str.replace('\ufeff', '').unique())
+    print(f"    本地数据库: {len(existing_artids)} 篇文章")
     
-    # 提取数字最大的artid
-    st_artids = [aid for aid in existing_artids if aid.startswith('st')]
-    if not st_artids:
+    # 从搜索页面获取所有artid（按HTML顺序）
+    all_artids = fetch_all_articles_from_search()
+    
+    if not all_artids:
+        print("    无法获取文章列表")
         return pd.DataFrame()
     
-    # 提取数字部分
-    nums = [int(re.search(r'\d+', aid).group()) for aid in st_artids if re.search(r'\d+', aid)]
-    if not nums:
-        return pd.DataFrame()
-    
-    max_num = max(nums)
-    print(f"    现有最大artid编号: st{max_num:04d}")
-    
-    # 检查后续编号
+    # 从前往后检查，找出新文章
+    print(f"\n    从前往后检查 artid...")
     new_articles = []
-    consecutive_failures = 0
     
-    for num in range(max_num + 1, max_num + MAX_ARTID_TO_CHECK + 1):
-        artid = f"st{num:04d}"
-        if artid in existing_artids:
+    for i, artid in enumerate(all_artids, 1):
+        artid_clean = artid.replace('\ufeff', '')
+        
+        if artid_clean in existing_artids:
+            # 已存在，跳过
             continue
-        
-        print(f"    检查 {artid}...", end=' ', flush=True)
-        info = fetch_article_info(artid)
-        
-        if info:
-            print(f"✓")
-            new_articles.append(info)
-            consecutive_failures = 0
         else:
-            print(f"×")
-            consecutive_failures += 1
-            # 如果连续10个不存在，停止检查
-            if consecutive_failures >= 10:
-                print(f"    (连续{consecutive_failures}个artid不存在，停止检查)")
-                break
-        
-        time.sleep(SLEEP_TIME)
+            # 新文章，获取完整信息
+            print(f"    [{i}/{len(all_artids)}] {artid}... ", end='', flush=True)
+            info = fetch_article_full_info(artid)
+            
+            if info:
+                print("✓ 新文章")
+                new_articles.append(info)
+            else:
+                print("× 获取失败")
+            
+            time.sleep(SLEEP_TIME)
     
+    print(f"\n    发现 {len(new_articles)} 篇新文章")
     return pd.DataFrame(new_articles) if new_articles else pd.DataFrame()
 
 # ==================== 主程序 ====================
