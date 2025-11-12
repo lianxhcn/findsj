@@ -80,6 +80,7 @@ def fetch_all_articles_from_search():
         seen_clean_ids = set()
         skipped_up = 0
         skipped_emptytag = 0
+        skipped_an = 0
         
         for link in article_links:
             href = link.get('href', '')
@@ -100,6 +101,11 @@ def fetch_all_articles_from_search():
                     skipped_emptytag += 1
                     continue
                 
+                # 跳过以 "an" 开头的 artid（announcements 类文章）
+                if artid_clean.lower().startswith('an'):
+                    skipped_an += 1
+                    continue
+                
                 if artid_clean not in seen_clean_ids:
                     artids.append(artid_raw)  # 保存原始版本
                     seen_clean_ids.add(artid_clean)
@@ -109,6 +115,8 @@ def fetch_all_articles_from_search():
             print(f"    跳过 {skipped_up} 个 'up' 开头的文章（updates）")
         if skipped_emptytag > 0:
             print(f"    跳过 {skipped_emptytag} 个 'emptytag' 开头的文章")
+        if skipped_an > 0:
+            print(f"    跳过 {skipped_an} 个 'an' 开头的文章（announcements）")
         return artids
         
     except Exception as e:
