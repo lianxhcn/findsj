@@ -1017,64 +1017,14 @@ program define findsj_check_update
     if _rc {
         dis as text "{hline 70}"
         dis as error "Database file not found: findsj.dta"
-        dis as text "Please run: " as result "findsj, update" as text " to download the latest database."
+        dis as text "Please run: " as result "{stata findsj, update updatesource(both):findsj, update updatesource(both)}" as text " to download the latest database."
         dis as text "{hline 70}"
         exit
     }
     
-    * Get file modification time
-    tempname fh
-    file open `fh' using "`dta_file'", read binary
-    file close `fh'
-    
-    * Check update reminder history
-    local update_check_file "`c(sysdir_personal)'findsj_lastcheck.txt"
-    local reminder_count_file "`c(sysdir_personal)'findsj_reminder_count.txt"
+    * Get current date
     local current_date = c(current_date)
-    local should_check = 1
-    
-    * Read last check date and reminder count
-    local last_check ""
-    local reminder_count = 0
-    
-    cap confirm file "`update_check_file'"
-    if _rc == 0 {
-        file open `fh' using "`update_check_file'", read text
-        file read `fh' last_check
-        file close `fh'
-        
-        * Convert dates to Stata date format
-        local last_date = date("`last_check'", "DMY")
-        local today = date("`current_date'", "DMY")
-        
-        * Only check once per day
-        if `today' == `last_date' {
-            local should_check = 0
-        }
-        
-        * Check if it's a new month (reset reminder count)
-        if month(`today') != month(`last_date') | year(`today') != year(`last_date') {
-            local reminder_count = 0
-        }
-        else {
-            * Read reminder count for this month
-            cap confirm file "`reminder_count_file'"
-            if _rc == 0 {
-                file open `fh' using "`reminder_count_file'", read text
-                file read `fh' count_str
-                file close `fh'
-                cap local reminder_count = real("`count_str'")
-                if missing(`reminder_count') local reminder_count = 0
-            }
-        }
-    }
-    
-    if !`should_check' exit
-    
-    * Update last check date
-    file open `fh' using "`update_check_file'", write replace
-    file write `fh' "`current_date'"
-    file close `fh'
+    local today = date("`current_date'", "DMY")
     
     * Get database file timestamp (Windows format)
     if c(os) == "Windows" {
@@ -1103,8 +1053,8 @@ program define findsj_check_update
                 local today = date("`current_date'", "DMY")
                 local days_diff = `today' - `file_date'
                 
-                * Check if database is older than 30 days AND reminder count < 2
-                if `days_diff' > 30 & `reminder_count' < 2 {
+                * Check if database is older than 30 days
+                if `days_diff' > 30 {
                     dis as text "{hline 70}"
                     dis as result "  Database Update Available"
                     dis as text "{hline 70}"
@@ -1112,20 +1062,13 @@ program define findsj_check_update
                     dis as text "(Last updated: " as result %tdCY-N-D `file_date' as text ")"
                     dis as text "A newer version may be available from the repository."
                     dis ""
-                    dis as text "Click to update (choose one):"
-                    dis as text "  {stata findsj, update updatesource(github):GitHub}  - For international users"
-                    dis as text "  {stata findsj, update updatesource(gitee):Gitee}   - For users in China (faster)"
-                    dis as text "  {stata findsj, update updatesource(both):Both}    - Try both sources"
+                    dis as text "Click to update:"
+                    dis as text "  {stata findsj, update updatesource(github):GitHub}  - International users"
+                    dis as text "  {stata findsj, update updatesource(gitee):Gitee}   - China users (faster)"
+                    dis as text "  {stata findsj, update updatesource(both):Try both} - Auto fallback"
                     dis ""
-                    dis as text "Reminder " as result "`=`reminder_count'+1'" as text "/2 this month"
-                    dis as text "To skip this check: " as result "findsj ..., noupdatecheck"
+                    dis as text "To skip: add " as result "noupdatecheck" as text " option"
                     dis as text "{hline 70}"
-                    
-                    * Increment reminder count
-                    local reminder_count = `reminder_count' + 1
-                    file open `fh' using "`reminder_count_file'", write replace
-                    file write `fh' "`reminder_count'"
-                    file close `fh'
                 }
             }
         }
