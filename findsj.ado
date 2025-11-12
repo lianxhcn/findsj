@@ -19,13 +19,13 @@ syntax [anything(name=keywords id="keywords")] [, ///
     GETDOI ///
     Clear Debug ///
     SETPath(string) QUERYpath RESETpath ///
-    UPdate UPdatesource(string) ///
+    Source(string) ///
     ]
 
 * Handle database update subcommand
-if "`update'" != "" {
-    * Use updatesource if specified, otherwise empty (will show usage)
-    findsj_update_db "`updatesource'"
+if "`source'" != "" {
+    * Use source if specified, otherwise empty (will show usage)
+    findsj_update_db "`source'"
     exit
 }
 
@@ -1004,85 +1004,117 @@ cap program drop findsj_update_db
 program define findsj_update_db
     args source_choice
     
+    dis as text "{hline 70}"
+    dis as result "  Stata Journal Database Update"
+    dis as text "{hline 70}"
+    dis ""
+    
     * Find findsj.ado location
     qui findfile findsj.ado
     local ado_dir = subinstr("`r(fn)'", "findsj.ado", "", .)
     local dta_file "`ado_dir'findsj.dta"
     
+    dis as text "Database location: " as result "`dta_file'"
+    dis ""
+    
     * Define download sources
     local github_url "https://raw.githubusercontent.com/BlueDayDreeaming/findsj/main/findsj.dta"
     local gitee_url "https://gitee.com/ChuChengWan/findsj/raw/main/findsj.dta"
     
-    * Show usage if no source specified
-    if "`source_choice'" == "" {
-        dis as text "{hline 60}"
-        dis as text "Usage: " as result "findsj, update updatesource(source)"
-        dis as text "{hline 60}"
-        dis as text "Available sources:"
-        dis as text "  {stata findsj, update updatesource(github):github} - For international users"
-        dis as text "  {stata findsj, update updatesource(gitee):gitee}  - For users in China"
-        dis as text "{hline 60}"
+    * Determine source based on argument
+    if "`source_choice'" == "" | "`source_choice'" == "auto" {
+        dis as text "Download source options:"
+        dis as text "  {stata findsj, source(github):github} = GitHub (Recommended for international users)"
+        dis as text "  {stata findsj, source(gitee):gitee}  = Gitee (Recommended for users in China)"
+        dis as text "  {stata findsj, source(both):both}   = Try both (GitHub first, then Gitee)"
+        dis as text ""
+        dis as text "Click on a source above to download."
+        dis as text "{hline 70}"
         exit
     }
     
-    * Set source URL
+    local sources ""
+    local source_names ""
+    
     if "`source_choice'" == "github" {
-        local source_url "`github_url'"
-        local source_name "GitHub"
+        local sources "`github_url'"
+        local source_names "GitHub"
     }
     else if "`source_choice'" == "gitee" {
-        local source_url "`gitee_url'"
-        local source_name "Gitee"
+        local sources "`gitee_url'"
+        local source_names "Gitee"
+    }
+    else if "`source_choice'" == "both" {
+        local sources "`github_url' `gitee_url'"
+        local source_names "GitHub Gitee"
     }
     else {
         dis as error "Invalid source: `source_choice'"
-        dis as text "Valid sources: github, gitee"
+        dis as text "Valid options: github, gitee, both"
         exit 198
     }
     
-    * Download from source
-    dis as text "{hline 60}"
-    dis as text "Downloading database from `source_name'..." _c
-    
-    cap copy "`source_url'" "`dta_file'", replace
-    
-    if _rc == 0 {
-        dis as result " Done!"
+    * Try each source
+    local n_sources = wordcount("`sources'")
+    forvalues i = 1/`n_sources' {
+        local source_url = word("`sources'", `i')
+        local source_name = word("`source_names'", `i')
         
-        * Verify the file
-        cap use "`dta_file'", clear
+        dis ""
+        dis as text "Downloading from `source_name'..." _c
+        
+        cap copy "`source_url'" "`dta_file'", replace
+        
         if _rc == 0 {
-            qui count
-            local n_records = r(N)
-            dis as text "{hline 60}"
-            dis as result "Update successful!"
-            dis as text "Total articles: " as result "`n_records'"
-            dis as text "Location: " as result "`dta_file'"
-            dis as text "{hline 60}"
+            dis as result " Success!"
+            
+            * Verify the file
+            cap use "`dta_file'", clear
+            if _rc == 0 {
+                qui count
+                local n_records = r(N)
+                dis ""
+                dis as text "{hline 70}"
+                dis as result "  Update Complete!"
+                dis as text "{hline 70}"
+                dis as text "Database updated successfully from `source_name'"
+                dis as text "Total articles: " as result "`n_records'"
+                dis as text "Location: " as result "`dta_file'"
+                dis as text "{hline 70}"
+                exit
+            }
+            else {
+                dis as error " File corrupted."
+                if `i' < `n_sources' {
+                    dis as text "Trying next source..."
+                }
+            }
         }
         else {
-            dis as error "Error: Downloaded file is corrupted"
-            exit 198
+            dis as error " Failed."
+            if `i' < `n_sources' {
+                dis as text "Trying next source..."
+            }
         }
     }
-    else {
-        dis as error " Failed!"
-        dis as text "{hline 60}"
-        dis as error "Could not download database from `source_name'"
-        dis as text "Possible reasons:"
-        dis as text "  - No internet connection"
-        dis as text "  - Firewall blocking access"
-        dis as text ""
-        dis as text "Try alternative source:"
-        if "`source_choice'" == "github" {
-            dis as text "  {stata findsj, update updatesource(gitee):findsj, update updatesource(gitee)}"
-        }
-        else {
-            dis as text "  {stata findsj, update updatesource(github):findsj, update updatesource(github)}"
-        }
-        dis as text "{hline 60}"
-        exit 631
-    }
+    
+    * All sources failed
+    dis ""
+    dis as text "{hline 70}"
+    dis as error "  Update Failed"
+    dis as text "{hline 70}"
+    dis as error "Could not download database from selected source(s)"
+    dis as text "Possible reasons:"
+    dis as text "  - No internet connection"
+    dis as text "  - Firewall blocking access"
+    dis as text "  - Repository temporarily unavailable"
+    dis ""
+    dis as text "Manual download instructions:"
+    dis as text "  1. Visit: " as result "https://github.com/BlueDayDreeaming/findsj"
+    dis as text "     (China: " as result "https://gitee.com/ChuChengWan/findsj" as text ")"
+    dis as text "  2. Download findsj.dta"
+    dis as text "  3. Copy to: " as result "`ado_dir'"
+    dis as text "{hline 70}"
 end
 
 

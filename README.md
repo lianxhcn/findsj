@@ -108,9 +108,9 @@ net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/) replace
 
 After installation, update to the latest article database:
 ```stata
-findsj, update updatesource(github)    // International users
-findsj, update updatesource(gitee)     // China users
-findsj, update updatesource(both)      // Auto fallback
+findsj, source(github)    // International users
+findsj, source(gitee)     // China users
+findsj, source(both)      // Auto fallback
 ```
 
 ---
@@ -243,7 +243,7 @@ findsj "Christopher F. Baum", author allresults
 
 Keep your local database up-to-date:
 ```stata
-findsj, update updatesource(both)
+findsj, source(both)
 ```
 
 ---
