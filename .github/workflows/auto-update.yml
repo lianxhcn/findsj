@@ -11,10 +11,15 @@ on:
 jobs:
   update-database:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Allow pushing changes
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for Gitee sync
+        token: ${{ secrets.GITHUB_TOKEN }}
       
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -57,3 +62,14 @@ jobs:
         echo "更新时间: $(date +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "数据文件: \`findsj.dta\`" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Sync to Gitee
+      if: steps.changes.outputs.changed == 'true'
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.GITEE_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan gitee.com >> ~/.ssh/known_hosts
+        git remote add gitee git@gitee.com:ChuChengWan/findsj.git || true
+        git push gitee main:main --force
+
