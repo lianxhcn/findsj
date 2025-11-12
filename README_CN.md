@@ -307,7 +307,7 @@ findsj, update updatesource(both)
 
 **作者：**
 - **连玉君** - [arlionn@163.com](mailto:arlionn@163.com)
-- **万楚呈** - [chucheng.wan@outlook.com](mailto:chucheng.wan@outlook.com)
+- **万储诚** - [chucheng.wan@outlook.com](mailto:chucheng.wan@outlook.com)
 
 **项目链接：**
 - **GitHub**：[BlueDayDreeaming/findsj](https://github.com/BlueDayDreeaming/findsj)
