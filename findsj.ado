@@ -131,6 +131,29 @@ else {
     if "`keyword'"!= "" local scope "keyword"
 }
 
+* Check if findsj.dta exists, if not and ref option is used, show one-time reminder
+local dta_found = 0
+local search_paths "`c(pwd)' `c(sysdir_personal)' `c(sysdir_plus)'"
+foreach p of local search_paths {
+    capture confirm file "`p'/findsj.dta"
+    if _rc == 0 {
+        local dta_found = 1
+        continue, break
+    }
+}
+
+if `dta_found' == 0 & "`ref'" != "" {
+    dis as text _n "{hline 70}"
+    dis as text " " as result "Notice:" as text " Local database (findsj.dta) not found."
+    dis as text " Without the database, DOI information may be limited."
+    dis as text _n " To enable full citation features, update the database:"
+    dis as text "   {stata findsj, update source(github):findsj, update source(github)}  " as text "(international users)"
+    dis as text "   {stata findsj, update source(gitee):findsj, update source(gitee)}   " as text "(China users, faster)"
+    dis as text "   {stata findsj, update source(both):findsj, update source(both)}    " as text "(auto fallback)"
+    dis as text _n " Or use {help findsj##options:getdoi option} to fetch DOI online (slower)."
+    dis as text "{hline 70}" _n
+}
+
 dis _n as text "  Searching ... " _c
 
 preserve 
@@ -488,8 +511,10 @@ forvalues i = 1/`n' {
             dis as text `"{stata "getiref `doi_i', text":.txt}"'
         }
         else {
-            * No DOI available
-            dis as text "    (Citation unavailable - no DOI found)"
+            * No DOI available - provide helpful guidance
+            dis as text "    " as error "(No DOI found)" as text " - Try: " _c
+            dis as text `"{stata "findsj, update source(both)":Update database}"' as text " or use " _c
+            dis as text "{help findsj##options:getdoi option}"
         }
     }
     
