@@ -133,7 +133,7 @@ else {
 
 * Check if findsj.dta exists, if not and ref option is used, show one-time reminder
 local dta_found = 0
-local search_paths "`c(pwd)' `c(sysdir_personal)' `c(sysdir_plus)'"
+local search_paths "`c(pwd)' `c(sysdir_personal)' `c(sysdir_plus)' `c(sysdir_plus)'f"
 foreach p of local search_paths {
     capture confirm file "`p'/findsj.dta"
     if _rc == 0 {
@@ -368,7 +368,7 @@ forvalues i = 1/`n' {
             * Clean art_id for matching (remove BOM if present)
             local art_id_match = subinstr("`art_id_i'", "ï»¿", "", .)
             
-            local search_paths "`c(pwd)' `c(sysdir_personal)' `c(sysdir_plus)'"
+            local search_paths "`c(pwd)' `c(sysdir_personal)' `c(sysdir_plus)' `c(sysdir_plus)'f"
             foreach p of local search_paths {
                 capture confirm file "`p'/findsj.dta"
                 if _rc == 0 & `has_doi' == 0 {
