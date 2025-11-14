@@ -145,12 +145,11 @@ foreach p of local search_paths {
 if `dta_found' == 0 & "`ref'" != "" {
     dis as text _n "{hline 70}"
     dis as text " " as result "Notice:" as text " Local database (findsj.dta) not found."
-    dis as text " Without the database, DOI information may be limited."
-    dis as text _n " To enable full citation features, update the database:"
+    dis as text " DOI information will be fetched online (may be slower)."
+    dis as text _n " For faster performance, update the database:"
     dis as text "   {stata findsj, update source(github):findsj, update source(github)}  " as text "(international users)"
     dis as text "   {stata findsj, update source(gitee):findsj, update source(gitee)}   " as text "(China users, faster)"
     dis as text "   {stata findsj, update source(both):findsj, update source(both)}    " as text "(auto fallback)"
-    dis as text _n " Or use {help findsj##options:getdoi option} to fetch DOI online (slower)."
     dis as text "{hline 70}" _n
 }
 
@@ -417,8 +416,8 @@ forvalues i = 1/`n' {
         }
     }
 
-    * Priority 2 (fallback): if still not found and user requested getdoi, fetch online
-    if `has_doi' == 0 & "`getdoi'" != "" {
+    * Priority 2 (fallback): if still not found and ref option is used, fetch online automatically
+    if `has_doi' == 0 & "`ref'" != "" {
         qui {
             cap findsj_doi `art_id_nobom'
             if _rc == 0 {
@@ -513,8 +512,7 @@ forvalues i = 1/`n' {
         else {
             * No DOI available - provide helpful guidance
             dis as text "    " as error "(No DOI found)" as text " - Try: " _c
-            dis as text `"{stata "findsj, update source(both)":Update database}"' as text " or use " _c
-            dis as text "{help findsj##options:getdoi option}"
+            dis as text `"{stata "findsj, update source(both)":Update database}"'
         }
     }
     
