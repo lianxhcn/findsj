@@ -18,6 +18,6 @@ d Requires: Stata version 14.0 or higher
 d
 f findsj.ado
 f findsj.sthlp
-f findsj.dta
+e findsj.dta
 f findsj_examples.do
 f README.txt
