@@ -438,15 +438,17 @@ forvalues i = 1/`n' {
     local file_ris "`art_id_nobom'.ris"
     
     * Detect OS and set appropriate script extension
+    * Put generated download scripts into the system temp directory to avoid
+    * cluttering the user's current working directory.
     if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
         local script_ext "sh"
-        local script_file_bib "_download_`art_id_nobom'_bib.sh"
-        local script_file_ris "_download_`art_id_nobom'_ris.sh"
+        local script_file_bib "`c(tmpdir)'_download_`art_id_nobom'_bib.sh"
+        local script_file_ris "`c(tmpdir)'_download_`art_id_nobom'_ris.sh"
     }
     else {
         local script_ext "ps1"
-        local script_file_bib "_download_`art_id_nobom'_bib.ps1"
-        local script_file_ris "_download_`art_id_nobom'_ris.ps1"
+        local script_file_bib "`c(tmpdir)'_download_`art_id_nobom'_bib.ps1"
+        local script_file_ris "`c(tmpdir)'_download_`art_id_nobom'_ris.ps1"
     }
     
     if "`nobrowser'" == "" {
@@ -477,12 +479,12 @@ forvalues i = 1/`n' {
         * Prepare BibTeX and RIS download commands (but don't create scripts yet)
         * Detect OS and set appropriate command format
         if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
-            local dl_bib_cmd "!bash _download_`art_id_nobom'_bib.sh"
-            local dl_ris_cmd "!bash _download_`art_id_nobom'_ris.sh"
+            local dl_bib_cmd "!bash \"`script_file_bib'\""
+            local dl_ris_cmd "!bash \"`script_file_ris'\""
         }
         else {
-            local dl_bib_cmd "!powershell -ExecutionPolicy Bypass -File _download_`art_id_nobom'_bib.ps1"
-            local dl_ris_cmd "!powershell -ExecutionPolicy Bypass -File _download_`art_id_nobom'_ris.ps1"
+            local dl_bib_cmd "!powershell -ExecutionPolicy Bypass -File \"`script_file_bib'\""
+            local dl_ris_cmd "!powershell -ExecutionPolicy Bypass -File \"`script_file_ris'\""
         }
         
         * Display BibTeX and RIS on the same line
