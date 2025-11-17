@@ -461,9 +461,9 @@ forvalues i = 1/`n' {
         
         * Display BibTeX and RIS buttons (on-demand download via helper program)
         dis as text " | " _c
-        dis as text `"{stata "findsj_download, artid(`art_id_nobom') type(bib) url(`url_bibtex')":BibTeX}"' _c
+        dis as text `"{stata "findsj_download `art_id_nobom', type(bib)":BibTeX}"' _c
         dis as text " | " _c
-        dis as text `"{stata "findsj_download, artid(`art_id_nobom') type(ris) url(`url_ris')":RIS}"'
+        dis as text `"{stata "findsj_download `art_id_nobom', type(ris)":RIS}"'
     }
     else {
         dis ""  // End line if nobrowser
@@ -986,7 +986,7 @@ end
 *===============================================================================
 program define findsj_download
     version 14
-    syntax, ARTid(string) Type(string) URL(string) [DOWNloadpath(string)]
+    syntax anything(name=artid), Type(string) [DOWNloadpath(string)]
     
     * Set download path (use global if set, otherwise current directory)
     if "`downloadpath'" == "" {
@@ -996,6 +996,18 @@ program define findsj_download
         else {
             local downloadpath "`c(pwd)'"
         }
+    }
+    
+    * Build URL based on article ID and type
+    if "`type'" == "bib" {
+        local url "https://www.stata-journal.com/ris.php?articlenum=`artid'&abs=1&type=bibtex"
+    }
+    else if "`type'" == "ris" {
+        local url "https://www.stata-journal.com/ris.php?articlenum=`artid'&abs=1&type=ris"
+    }
+    else {
+        dis as error "Error: type must be 'bib' or 'ris'"
+        exit 198
     }
     
     * Determine file extension and article URL
