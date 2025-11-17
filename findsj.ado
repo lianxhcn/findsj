@@ -107,12 +107,6 @@ cap program drop findsj
 program define findsj, rclass
 version 14
 
-* Ensure findsj_download is defined (load helper programs if not already)
-capture which findsj_download
-if _rc != 0 {
-    quietly run "`c(sysdir_plus)'f/findsj.ado"
-}
-
 syntax [anything(name=keywords id="keywords")] [, ///
     Author Title Keyword ///
     REF  ///
