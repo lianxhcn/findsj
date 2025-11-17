@@ -1126,12 +1126,12 @@ program define findsj_check_update
     
     foreach location in "`c(sysdir_plus)'f" "`c(sysdir_personal)'" "`ado_dir'" "d:\User\private\Desktop\stata\findsj_v3" {
         if "`location'" == "" continue
+        if `version_found' continue  // Skip if already found
         capture confirm file "`location'/findsj_version.dta"
         if !_rc {
             quietly use "`location'/findsj_version.dta", clear
             local db_date_val = db_date[1]
             local version_found = 1
-            break
         }
     }
     
