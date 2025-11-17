@@ -1110,67 +1110,64 @@ program define findsj_check_update
         }
     }
     
-    * Find findsj.ado location
+    * Try to find findsj_version.dta
+    local version_found = 0
+    local db_date_val = 0
+    
+    * Search in multiple locations (including where findsj.ado is located)
     capture findfile findsj.ado
-    if _rc {
-        exit  // Cannot find file, skip check
-    }
-    local ado_file = r(fn)
-    
-    * Get file creation date
-    local tmpfile "`c(tmpdir)'findsj_filedate.txt"
-    
-    if "`c(os)'" == "Windows" {
-        * Windows: Use PowerShell to get creation time
-        capture shell powershell -Command "(Get-Item '`ado_file'').CreationTime.ToString('yyyyMMdd')" > "`tmpfile'" 2>nul
+    if !_rc {
+        local ado_dir = subinstr(r(fn), "/findsj.ado", "", .)
+        local ado_dir = subinstr("`ado_dir'", "\findsj.ado", "", .)
     }
     else {
-        * Unix/Mac: Use stat command
-        capture shell stat -f "%B" "`ado_file'" | date -r - +%Y%m%d > "`tmpfile'" 2>/dev/null
+        local ado_dir ""
     }
     
-    if _rc {
-        exit  // Cannot get file date, skip check
-    }
-    
-    * Read file creation date
-    capture {
-        tempname fh
-        file open `fh' using "`tmpfile'", read text
-        file read `fh' file_date_str
-        file close `fh'
-        
-        * Parse date (yyyyMMdd format)
-        local year = substr("`file_date_str'", 1, 4)
-        local month = substr("`file_date_str'", 5, 2)
-        local day = substr("`file_date_str'", 7, 2)
-        
-        * Convert to Stata date number
-        local file_date = mdy(`month', `day', `year')
-        local today = date("`today_str'", "DMY")
-        local days_diff = `today' - `file_date'
-        
-        * If older than 120 days (about 4 months), show update reminder
-        if `days_diff' > 120 {
-            dis ""
-            dis as text "{hline 70}"
-            dis as result "  📢 Update Available!"
-            dis as text "{hline 70}"
-            dis as text "Your findsj version is " as result "`days_diff'" as text " days old"
-            dis as text "(installed on: " as result "`day'/`month'/`year'" as text ")"
-            dis ""
-            dis as text "You can update findsj, type:"
-            dis as result "  net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/) replace"
-            dis as text "{hline 70}"
-            dis ""
+    foreach location in "`c(sysdir_plus)'f" "`c(sysdir_personal)'" "`ado_dir'" "d:\User\private\Desktop\stata\findsj_v3" {
+        if "`location'" == "" continue
+        capture confirm file "`location'/findsj_version.dta"
+        if !_rc {
+            quietly use "`location'/findsj_version.dta", clear
+            local db_date_val = db_date[1]
+            local version_found = 1
+            break
         }
-        
-        * Record today's check
-        file open `fh' using "`check_file'", write text replace
-        file write `fh' "`today_str'"
-        file close `fh'
     }
     
-    * Clean up
-    capture erase "`tmpfile'"
+    * If version file not found, skip check
+    if !`version_found' | `db_date_val' == 0 {
+        exit
+    }
+    
+    * Parse database date (yyyyMMdd format)
+    local db_year = floor(`db_date_val'/10000)
+    local db_month = floor((`db_date_val' - `db_year'*10000)/100)
+    local db_day = `db_date_val' - `db_year'*10000 - `db_month'*100
+    
+    * Calculate days difference
+    local db_date_num = mdy(`db_month', `db_day', `db_year')
+    local today = date("`today_str'", "DMY")
+    local days_diff = `today' - `db_date_num'
+    
+    * If older than 120 days (about 4 months), show update reminder
+    if `days_diff' > 120 {
+        dis ""
+        dis as text "{hline 70}"
+        dis as result "  📢 Update Available!"
+        dis as text "{hline 70}"
+        dis as text "Your findsj database is " as result "`days_diff'" as text " days old"
+        dis as text "(last updated: " as result "`db_day'/`db_month'/`db_year'" as text ")"
+        dis ""
+        dis as text "You can update findsj, type:"
+        dis as result "  net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/) replace"
+        dis as text "{hline 70}"
+        dis ""
+    }
+    
+    * Record today's check
+    tempname fh
+    file open `fh' using "`check_file'", write text replace
+    file write `fh' "`today_str'"
+    file close `fh'
 end
