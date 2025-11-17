@@ -120,7 +120,7 @@ syntax [anything(name=keywords id="keywords")] [, ///
     ]
 
 * Check for updates (once per day)
-quietly findsj_check_update
+findsj_check_update
 
 * Handle download subcommand (findsj artid, type(bib|ris))
 if "`type'" != "" {
