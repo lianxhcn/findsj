@@ -119,6 +119,9 @@ syntax [anything(name=keywords id="keywords")] [, ///
     Type(string) ///
     ]
 
+* Check for updates (once per day)
+quietly findsj_check_update
+
 * Handle download subcommand (findsj artid, type(bib|ris))
 if "`type'" != "" {
     if "`type'" != "bib" & "`type'" != "ris" {
@@ -1080,4 +1083,94 @@ program define findsj_update_db
     dis as text "  2. Download findsj.dta"
     dis as text "  3. Copy to: " as result "`ado_dir'"
     dis as text "{hline 70}"
+end
+
+*===============================================================================
+* Helper program: findsj_check_update
+* Check if findsj.ado needs update (once per day)
+*===============================================================================
+cap program drop findsj_check_update
+program define findsj_check_update
+    version 14
+    
+    * Check if update check was already done today
+    local check_file "`c(sysdir_personal)'findsj_lastcheck.txt"
+    local today_str = c(current_date)
+    
+    capture confirm file "`check_file'"
+    if !_rc {
+        tempname fh
+        file open `fh' using "`check_file'", read text
+        file read `fh' last_check
+        file close `fh'
+        
+        * If already checked today, skip
+        if "`last_check'" == "`today_str'" {
+            exit
+        }
+    }
+    
+    * Find findsj.ado location
+    capture findfile findsj.ado
+    if _rc {
+        exit  // Cannot find file, skip check
+    }
+    local ado_file = r(fn)
+    
+    * Get file creation date
+    local tmpfile "`c(tmpdir)'findsj_filedate.txt"
+    
+    if "`c(os)'" == "Windows" {
+        * Windows: Use PowerShell to get creation time
+        capture shell powershell -Command "(Get-Item '`ado_file'').CreationTime.ToString('yyyyMMdd')" > "`tmpfile'" 2>nul
+    }
+    else {
+        * Unix/Mac: Use stat command
+        capture shell stat -f "%B" "`ado_file'" | date -r - +%Y%m%d > "`tmpfile'" 2>/dev/null
+    }
+    
+    if _rc {
+        exit  // Cannot get file date, skip check
+    }
+    
+    * Read file creation date
+    capture {
+        tempname fh
+        file open `fh' using "`tmpfile'", read text
+        file read `fh' file_date_str
+        file close `fh'
+        
+        * Parse date (yyyyMMdd format)
+        local year = substr("`file_date_str'", 1, 4)
+        local month = substr("`file_date_str'", 5, 2)
+        local day = substr("`file_date_str'", 7, 2)
+        
+        * Convert to Stata date number
+        local file_date = mdy(`month', `day', `year')
+        local today = date("`today_str'", "DMY")
+        local days_diff = `today' - `file_date'
+        
+        * If older than 120 days (about 4 months), show update reminder
+        if `days_diff' > 120 {
+            dis ""
+            dis as text "{hline 70}"
+            dis as result "  📢 Update Available!"
+            dis as text "{hline 70}"
+            dis as text "Your findsj version is " as result "`days_diff'" as text " days old"
+            dis as text "(installed on: " as result "`day'/`month'/`year'" as text ")"
+            dis ""
+            dis as text "You can update findsj, type:"
+            dis as result "  net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/) replace"
+            dis as text "{hline 70}"
+            dis ""
+        }
+        
+        * Record today's check
+        file open `fh' using "`check_file'", write text replace
+        file write `fh' "`today_str'"
+        file close `fh'
+    }
+    
+    * Clean up
+    capture erase "`tmpfile'"
 end
