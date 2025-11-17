@@ -430,26 +430,9 @@ forvalues i = 1/`n' {
         }
     }
     
-    * Prepare BibTeX and RIS download links BEFORE displaying
-    local url_article "https://www.stata-journal.com/article.html?article=`art_id_clean_i'"
+    * Prepare BibTeX and RIS download URLs
     local url_bibtex "https://www.stata-journal.com/ris.php?articlenum=`art_id_clean_i'&abs=1&type=bibtex"
     local url_ris "https://www.stata-journal.com/ris.php?articlenum=`art_id_clean_i'&abs=1&type=ris"
-    local file_bib "`art_id_nobom'.bib"
-    local file_ris "`art_id_nobom'.ris"
-    
-    * Detect OS and set appropriate script extension
-    * Put generated download scripts into the system temp directory to avoid
-    * cluttering the user's current working directory.
-    if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
-        local script_ext "sh"
-        local script_file_bib "`c(tmpdir)'_download_`art_id_nobom'_bib.sh"
-        local script_file_ris "`c(tmpdir)'_download_`art_id_nobom'_ris.sh"
-    }
-    else {
-        local script_ext "ps1"
-        local script_file_bib "`c(tmpdir)'_download_`art_id_nobom'_bib.ps1"
-        local script_file_ris "`c(tmpdir)'_download_`art_id_nobom'_ris.ps1"
-    }
     
     if "`nobrowser'" == "" {
         dis as text "    " _c
@@ -476,22 +459,11 @@ forvalues i = 1/`n' {
             dis as text `"{stata "search `art_id_nobom'":Install}"' _c
         }
         
-        * Prepare BibTeX and RIS download commands (but don't create scripts yet)
-        * Detect OS and set appropriate command format
-        if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
-            local dl_bib_cmd "!bash \"`script_file_bib'\""
-            local dl_ris_cmd "!bash \"`script_file_ris'\""
-        }
-        else {
-            local dl_bib_cmd "!powershell -ExecutionPolicy Bypass -File \"`script_file_bib'\""
-            local dl_ris_cmd "!powershell -ExecutionPolicy Bypass -File \"`script_file_ris'\""
-        }
-        
-        * Display BibTeX and RIS on the same line
+        * Display BibTeX and RIS buttons (on-demand download via helper program)
         dis as text " | " _c
-        dis as text `"{stata `dl_bib_cmd':BibTeX}"' _c
+        dis as text `"{stata \"findsj_download, artid(`art_id_nobom') type(bib) url(`url_bibtex')\":BibTeX}"' _c
         dis as text " | " _c
-        dis as text `"{stata `dl_ris_cmd':RIS}"'
+        dis as text `"{stata \"findsj_download, artid(`art_id_nobom') type(ris) url(`url_ris')\":RIS}"'
     }
     else {
         dis ""  // End line if nobrowser
@@ -517,141 +489,6 @@ forvalues i = 1/`n' {
             dis as text `"{stata "findsj, update source(both)":Update database}"'
         }
     }
-    
-    * Create download scripts for BibTeX and RIS
-    * Create download scripts (PowerShell for Windows, shell script for Mac/Unix)
-    
-    if "`debug'" != "" {
-        noi dis as text "DEBUG: art_id_i = `art_id_i'"
-        noi dis as text "DEBUG: url_article = `url_article'"
-        noi dis as text "DEBUG: url_bibtex = `url_bibtex'"
-        noi dis as text "DEBUG: url_ris = `url_ris'"
-        noi dis as text "DEBUG: OS = `c(os)', script_ext = `script_ext'"
-    }
-    
-    * Create download scripts (PowerShell for Windows, shell script for Mac/Unix)
-    * Create download scripts (PowerShell for Windows, shell script for Mac/Unix)
-    quietly {
-        tempname fh
-        
-        * Use configured download path (defined at program start)
-        local full_file_bib "`download_path'/`file_bib'"
-        local full_file_ris "`download_path'/`file_ris'"
-        
-        if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
-            * Shell script for BibTeX (Mac/Unix with curl)
-            * Escape special characters in file paths for shell
-            local full_file_bib_esc = subinstr("`full_file_bib'", `"""', `"\""', .)
-            local full_file_bib_esc = subinstr("`full_file_bib_esc'", "$", "\$", .)
-            local full_file_bib_esc = subinstr("`full_file_bib_esc'", "`", "\`", .)
-            
-            file open `fh' using "`script_file_bib'", write replace
-            file write `fh' "#!/bin/bash" _n
-            file write `fh' "OUTPUT_FILE=" `"""' "`full_file_bib_esc'" `"""' _n
-            file write `fh' "curl -sSL -H 'Referer: `url_article'' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' -o " `"""' "$" "{OUTPUT_FILE}" `"""' " '`url_bibtex'' > /dev/null 2>&1" _n
-            file write `fh' "if [ -f " `"""' "$" "{OUTPUT_FILE}" `"""' " ] && [ -s " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
-            file write `fh' "    echo " `"""' "Downloaded: $" "{OUTPUT_FILE}" `"""' _n
-            file write `fh' "    echo " `"""' "" `"""' _n
-            file write `fh' "    echo " `"""' "To change future download path:" `"""' _n
-            file write `fh' "    echo " `"""' "  findsj, setpath(/your/path)  -- Set new path" `"""' _n
-            file write `fh' "    echo " `"""' "  findsj, querypath              -- Check current path" `"""' _n
-            file write `fh' "    echo " `"""' "  findsj, resetpath              -- Reset to default" `"""' _n
-            file write `fh' "    open " `"""' "$" "{OUTPUT_FILE}" `"""' " > /dev/null 2>&1" _n
-            file write `fh' "else" _n
-            file write `fh' "    echo " `"""' "Download failed" `"""' " >&2" _n
-            file write `fh' "fi" _n
-            file close `fh'
-            
-            * Make script executable
-            quietly shell chmod +x "`script_file_bib'" > /dev/null 2>&1
-            
-            * Shell script for RIS (Mac/Unix with curl)
-            * Escape special characters in file paths for shell
-            local full_file_ris_esc = subinstr("`full_file_ris'", `"""', `"\""', .)
-            local full_file_ris_esc = subinstr("`full_file_ris_esc'", "$", "\$", .)
-            local full_file_ris_esc = subinstr("`full_file_ris_esc'", "`", "\`", .)
-            
-            file open `fh' using "`script_file_ris'", write replace
-            file write `fh' "#!/bin/bash" _n
-            file write `fh' "OUTPUT_FILE=" `"""' "`full_file_ris_esc'" `"""' _n
-            file write `fh' "echo " `"""' "Downloading RIS from: `url_ris'" `"""' _n
-            file write `fh' "curl -sSL -H 'Referer: `url_article'' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' -o " `"""' "$" "{OUTPUT_FILE}" `"""' " '`url_ris''" _n
-            file write `fh' "echo " `"""' "Curl exit code: $" "?" `"""' _n
-            file write `fh' "if [ -f " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
-            file write `fh' "    FILE_SIZE=" `"""' "$(wc -c < " `"""' "$" "{OUTPUT_FILE}" `"""' ")" `"""' _n
-            file write `fh' "    echo " `"""' "File exists, size: $" "{FILE_SIZE} bytes" `"""' _n
-            file write `fh' "    if [ -s " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
-            file write `fh' "        echo " `"""' "Downloaded: $" "{OUTPUT_FILE}" `"""' _n
-            file write `fh' "        echo " `"""' "" `"""' _n
-            file write `fh' "        echo " `"""' "To change future download path:" `"""' _n
-            file write `fh' "        echo " `"""' "  findsj, setpath(/your/path)  -- Set new path" `"""' _n
-            file write `fh' "        echo " `"""' "  findsj, querypath              -- Check current path" `"""' _n
-            file write `fh' "        echo " `"""' "  findsj, resetpath              -- Reset to default" `"""' _n
-            file write `fh' "        open " `"""' "$" "{OUTPUT_FILE}" `"""' " > /dev/null 2>&1" _n
-            file write `fh' "    else" _n
-            file write `fh' "        echo " `"""' "Download failed: file is empty" `"""' " >&2" _n
-            file write `fh' "    fi" _n
-            file write `fh' "else" _n
-            file write `fh' "    echo " `"""' "Download failed: file not created" `"""' " >&2" _n
-            file write `fh' "fi" _n
-            file close `fh'
-            
-            * Make script executable
-            quietly shell chmod +x "`script_file_ris'" > /dev/null 2>&1
-        }
-        else {
-            * PowerShell script for BibTeX (Windows)
-            file open `fh' using "`script_file_bib'", write replace
-            file write `fh' "$" "headers = @{" _n
-            file write `fh' "    'Referer' = '`url_article''" _n
-            file write `fh' "    'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'" _n
-            file write `fh' "}" _n
-            file write `fh' "Invoke-WebRequest -Uri '`url_bibtex'' -Headers $" "headers -OutFile '`full_file_bib''" _n
-            file write `fh' "if (Test-Path '`full_file_bib'') {" _n
-            file write `fh' "    Write-Host " `"""' "Downloaded: `full_file_bib'" `"""' " -ForegroundColor Green" _n
-            file write `fh' "    Write-Host " `"""' "" `"""' _n
-            file write `fh' "    Write-Host " `"""' "To change future download path:" `"""' " -ForegroundColor Cyan" _n
-            file write `fh' "    Write-Host " `"""' "  findsj, setpath(d:\your\path)  -- Set new path" `"""' " -ForegroundColor Yellow" _n
-            file write `fh' "    Write-Host " `"""' "  findsj, querypath              -- Check current path" `"""' " -ForegroundColor Yellow" _n
-            file write `fh' "    Write-Host " `"""' "  findsj, resetpath              -- Reset to default" `"""' " -ForegroundColor Yellow" _n
-            file write `fh' "    Start-Process '`full_file_bib''" _n
-            file write `fh' "} else {" _n
-            file write `fh' "    Write-Host " `"""' "Download failed!" `"""' " -ForegroundColor Red" _n
-            file write `fh' "}" _n
-            file close `fh'
-            
-            * PowerShell script for RIS (Windows)
-            file open `fh' using "`script_file_ris'", write replace
-            file write `fh' "$" "headers = @{" _n
-            file write `fh' "    'Referer' = '`url_article''" _n
-            file write `fh' "    'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'" _n
-            file write `fh' "}" _n
-            file write `fh' "Invoke-WebRequest -Uri '`url_ris'' -Headers $" "headers -OutFile '`full_file_ris''" _n
-            file write `fh' "if (Test-Path '`full_file_ris'') {" _n
-            file write `fh' "    Write-Host " `"""' "Downloaded: `full_file_ris'" `"""' " -ForegroundColor Green" _n
-            file write `fh' "    Write-Host " `"""' "" `"""' _n
-            file write `fh' "    Write-Host " `"""' "To change future download path:" `"""' " -ForegroundColor Cyan" _n
-            file write `fh' "    Write-Host " `"""' "  findsj, setpath(d:\your\path)  -- Set new path" `"""' " -ForegroundColor Yellow" _n
-            file write `fh' "    Write-Host " `"""' "  findsj, querypath              -- Check current path" `"""' " -ForegroundColor Yellow" _n
-            file write `fh' "    Write-Host " `"""' "  findsj, resetpath              -- Reset to default" `"""' " -ForegroundColor Yellow" _n
-            file write `fh' "    Start-Process '`full_file_ris''" _n
-            file write `fh' "} else {" _n
-            file write `fh' "    Write-Host " `"""' "Download failed!" `"""' " -ForegroundColor Red" _n
-            file write `fh' "}" _n
-            file close `fh'
-        }
-    }
-    
-    * Create shell commands based on OS
-    if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
-        local dl_bib "!bash `script_file_bib'"
-        local dl_ris "!bash `script_file_ris'"
-    }
-    else {
-        local dl_bib "!powershell -ExecutionPolicy Bypass -File `script_file_bib'"
-        local dl_ris "!powershell -ExecutionPolicy Bypass -File `script_file_ris'"
-    }
-
     
 }
 
@@ -1141,6 +978,99 @@ program define findsj_update_db
     dis as text "  3. Copy to: " as result "`ado_dir'"
     dis as text "{hline 70}"
 end
+
+
+*===============================================================================
+* Helper program: findsj_download
+* Download BibTeX or RIS file on-demand when user clicks the button
+*===============================================================================
+program define findsj_download
+    version 14
+    syntax, ARTid(string) Type(string) URL(string) [DOWNloadpath(string)]
+    
+    * Set download path (use global if set, otherwise current directory)
+    if "`downloadpath'" == "" {
+        if "$findsj_download_path" != "" {
+            local downloadpath "$findsj_download_path"
+        }
+        else {
+            local downloadpath "`c(pwd)'"
+        }
+    }
+    
+    * Determine file extension and article URL
+    if "`type'" == "bib" {
+        local file_ext "bib"
+        local file_name "`artid'.bib"
+    }
+    else if "`type'" == "ris" {
+        local file_ext "ris"
+        local file_name "`artid'.ris"
+    }
+    else {
+        dis as error "Error: type must be 'bib' or 'ris'"
+        exit 198
+    }
+    
+    local full_file "`downloadpath'/`file_name'"
+    local url_article "https://www.stata-journal.com/article.html?article=`artid'"
+    
+    * Generate unique temp script file name in system temp directory
+    local script_file "`c(tmpdir)'_findsj_dl_`artid'_`type'.`=cond("`c(os)'"=="Windows","ps1","sh")'"
+    
+    * Create and execute download script
+    quietly {
+        tempname fh
+        
+        if "`c(os)'" == "MacOSX" | "`c(os)'" == "Unix" {
+            * Unix/Mac shell script with curl
+            local full_file_esc = subinstr("`full_file'", `"""', `"\""', .)
+            local full_file_esc = subinstr("`full_file_esc'", "$", "\$", .)
+            local full_file_esc = subinstr("`full_file_esc'", "`", "\`", .)
+            
+            file open `fh' using "`script_file'", write replace
+            file write `fh' "#!/bin/bash" _n
+            file write `fh' "OUTPUT_FILE=" `"""' "`full_file_esc'" `"""' _n
+            file write `fh' "curl -sSL -H 'Referer: `url_article'' -H 'User-Agent: Mozilla/5.0' -o " `"""' "$" "{OUTPUT_FILE}" `"""' " '`url'' > /dev/null 2>&1" _n
+            file write `fh' "if [ -f " `"""' "$" "{OUTPUT_FILE}" `"""' " ] && [ -s " `"""' "$" "{OUTPUT_FILE}" `"""' " ]; then" _n
+            file write `fh' "    echo " `"""' "Downloaded: $" "{OUTPUT_FILE}" `"""' _n
+            file write `fh' "    open " `"""' "$" "{OUTPUT_FILE}" `"""' " > /dev/null 2>&1" _n
+            file write `fh' "else" _n
+            file write `fh' "    echo " `"""' "Download failed" `"""' " >&2" _n
+            file write `fh' "fi" _n
+            file write `fh' "rm -f " `"""' "`script_file'" `"""' " > /dev/null 2>&1" _n
+            file close `fh'
+            
+            shell chmod +x "`script_file'" > /dev/null 2>&1
+            shell bash "`script_file'" &
+        }
+        else {
+            * Windows PowerShell script
+            file open `fh' using "`script_file'", write replace
+            file write `fh' "$" "headers = @{" _n
+            file write `fh' "    'Referer' = '`url_article''" _n
+            file write `fh' "    'User-Agent' = 'Mozilla/5.0'" _n
+            file write `fh' "}" _n
+            file write `fh' "try {" _n
+            file write `fh' "    Invoke-WebRequest -Uri '`url'' -Headers $" "headers -OutFile '`full_file''" _n
+            file write `fh' "    if (Test-Path '`full_file'') {" _n
+            file write `fh' "        Write-Host 'Downloaded: `full_file'' -ForegroundColor Green" _n
+            file write `fh' "        Start-Process '`full_file''" _n
+            file write `fh' "    } else {" _n
+            file write `fh' "        Write-Host 'Download failed!' -ForegroundColor Red" _n
+            file write `fh' "    }" _n
+            file write `fh' "} finally {" _n
+            file write `fh' "    Remove-Item -Path '`script_file'' -Force -ErrorAction SilentlyContinue" _n
+            file write `fh' "}" _n
+            file close `fh'
+            
+            shell powershell -ExecutionPolicy Bypass -File "`script_file'"
+        }
+    }
+    
+    dis as text "Downloading `file_ext' file for `artid'..."
+end
+
 
 
 
