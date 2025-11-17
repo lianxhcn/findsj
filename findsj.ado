@@ -461,9 +461,9 @@ forvalues i = 1/`n' {
         
         * Display BibTeX and RIS buttons (on-demand download via helper program)
         dis as text " | " _c
-        dis as text `"{stata \"findsj_download, artid(`art_id_nobom') type(bib) url(`url_bibtex')\":BibTeX}"' _c
+        dis as text `"{stata findsj_download, artid(`art_id_nobom') type(bib) url(`url_bibtex'):BibTeX}"' _c
         dis as text " | " _c
-        dis as text `"{stata \"findsj_download, artid(`art_id_nobom') type(ris) url(`url_ris')\":RIS}"'
+        dis as text `"{stata findsj_download, artid(`art_id_nobom') type(ris) url(`url_ris'):RIS}"'
     }
     else {
         dis ""  // End line if nobrowser
