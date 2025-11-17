@@ -532,10 +532,6 @@ forvalues i = 1/`n' {
         }
     }
     
-    * Prepare BibTeX and RIS download URLs
-    local url_bibtex "https://www.stata-journal.com/ris.php?articlenum=`art_id_clean_i'&abs=1&type=bibtex"
-    local url_ris "https://www.stata-journal.com/ris.php?articlenum=`art_id_clean_i'&abs=1&type=ris"
-    
     if "`nobrowser'" == "" {
         dis as text "    " _c
         dis as text `"{browse "`url_html_i'":Article}"' _c
