@@ -37,7 +37,7 @@ jobs:
     - name: Check for changes
       id: changes
       run: |
-        if git diff --quiet findsj.dta; then
+        if git diff --quiet findsj.dta findsj_version.dta; then
           echo "changed=false" >> $GITHUB_OUTPUT
         else
           echo "changed=true" >> $GITHUB_OUTPUT
@@ -48,7 +48,7 @@ jobs:
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add findsj.dta
+        git add findsj.dta findsj_version.dta
         git commit -m "Auto update: Stata Journal database updated on $(date +'%Y-%m-%d')"
         git push
       env:
@@ -61,7 +61,7 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "更新时间: $(date +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "数据文件: \`findsj.dta\`" >> $GITHUB_STEP_SUMMARY
+        echo "数据文件: \`findsj.dta\`, \`findsj_version.dta\`" >> $GITHUB_STEP_SUMMARY
     
     - name: Sync to Gitee
       if: steps.changes.outputs.changed == 'true'

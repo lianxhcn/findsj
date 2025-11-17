@@ -15,6 +15,7 @@ import shutil
 
 # ==================== 配置 ====================
 DTA_FILE = 'findsj.dta'
+VERSION_FILE = 'findsj_version.dta'
 SEARCH_URL = 'https://www.stata-journal.com/sjsearch.html?choice=keyword&q='  # 搜索所有文章
 SLEEP_TIME = 0.5  # 请求间隔（秒）
 
@@ -289,7 +290,28 @@ def main():
         print(f"    错误: {e}")
         return
     
-    # 6. 总结
+    # 6. 更新版本文件的 db_date
+    print(f"\n[6] 更新版本文件...")
+    try:
+        # 读取版本文件
+        version_df = pd.read_stata(VERSION_FILE)
+        
+        # 更新 db_date 为今天的日期（yyyyMMdd 格式）
+        today_date = int(datetime.now().strftime('%Y%m%d'))
+        version_df.loc[0, 'db_date'] = today_date
+        
+        # 清空 last_check（新数据库，重新开始检查）
+        if 'last_check' in version_df.columns:
+            version_df.loc[0, 'last_check'] = ''
+        
+        # 保存版本文件
+        version_df.to_stata(VERSION_FILE, write_index=False, version=117)
+        print(f"    成功更新: {VERSION_FILE}")
+        print(f"    db_date: {today_date} ({datetime.now().strftime('%Y-%m-%d')})")
+    except Exception as e:
+        print(f"    警告: 版本文件更新失败 - {e}")
+    
+    # 7. 总结
     print("\n" + "=" * 70)
     print("更新完成！")
     print("=" * 70)

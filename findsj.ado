@@ -1093,26 +1093,12 @@ cap program drop findsj_check_update
 program define findsj_check_update
     version 14
     
-    * Check if update check was already done today
-    local check_file "`c(sysdir_personal)'findsj_lastcheck.txt"
     local today_str = c(current_date)
-    
-    capture confirm file "`check_file'"
-    if !_rc {
-        tempname fh
-        file open `fh' using "`check_file'", read text
-        file read `fh' last_check
-        file close `fh'
-        
-        * If already checked today, skip
-        if "`last_check'" == "`today_str'" {
-            exit
-        }
-    }
     
     * Try to find findsj_version.dta
     local version_found = 0
     local db_date_val = 0
+    local version_file_path = ""
     
     * Search in multiple locations (including where findsj.ado is located)
     capture findfile findsj.ado
@@ -1129,9 +1115,23 @@ program define findsj_check_update
         if `version_found' continue  // Skip if already found
         capture confirm file "`location'/findsj_version.dta"
         if !_rc {
+            preserve
             quietly use "`location'/findsj_version.dta", clear
             local db_date_val = db_date[1]
+            
+            * Check if already checked today
+            capture confirm variable last_check
+            if !_rc {
+                local last_check = last_check[1]
+                if "`last_check'" == "`today_str'" {
+                    restore
+                    exit  // Already checked today
+                }
+            }
+            restore
+            
             local version_found = 1
+            local version_file_path = "`location'/findsj_version.dta"
         }
     }
     
@@ -1167,9 +1167,20 @@ program define findsj_check_update
         dis ""
     }
     
-    * Record today's check
-    tempname fh
-    file open `fh' using "`check_file'", write text replace
-    file write `fh' "`today_str'"
-    file close `fh'
+    * Update last_check date in version file
+    quietly {
+        preserve
+        use "`version_file_path'", clear
+        
+        * Add last_check variable if it doesn't exist
+        capture confirm variable last_check
+        if _rc {
+            gen str20 last_check = ""
+        }
+        
+        * Update the date
+        replace last_check = "`today_str'" in 1
+        save "`version_file_path'", replace
+        restore
+    }
 end
