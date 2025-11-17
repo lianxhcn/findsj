@@ -1160,6 +1160,8 @@ program define findsj_check_update
         dis as text "(last updated: " as result "`db_day'/`db_month'/`db_year'" as text ")"
         dis ""
         dis as text "You can update findsj, type:"
+        dis as result "  net install findsj, from(https://github.com/BlueDayDreeaming/findsj/raw/main/) replace"
+        dis as text "Or (China users):"
         dis as result "  net install findsj, from(https://gitee.com/ChuChengWan/findsj/raw/main/) replace"
         dis as text "{hline 70}"
         dis ""
