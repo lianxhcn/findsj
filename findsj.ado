@@ -116,7 +116,18 @@ syntax [anything(name=keywords id="keywords")] [, ///
     Clear Debug ///
     SETPath(string) QUERYpath RESETpath ///
     UPdate source(string) ///
+    Type(string) ///
     ]
+
+* Handle download subcommand (findsj artid, type(bib|ris))
+if "`type'" != "" {
+    if "`type'" != "bib" & "`type'" != "ris" {
+        dis as error "Error: type must be 'bib' or 'ris'"
+        exit 198
+    }
+    findsj_download `keywords', type(`type')
+    exit
+}
 
 * Handle database update subcommand
 if "`update'" != "" {
@@ -553,9 +564,9 @@ forvalues i = 1/`n' {
         
         * Display BibTeX and RIS buttons (on-demand download via helper program)
         dis as text " | " _c
-        dis as text `"{stata "findsj_download `art_id_nobom', type(bib)":BibTeX}"' _c
+        dis as text `"{stata "findsj `art_id_nobom', type(bib)":BibTeX}"' _c
         dis as text " | " _c
-        dis as text `"{stata "findsj_download `art_id_nobom', type(ris)":RIS}"'
+        dis as text `"{stata "findsj `art_id_nobom', type(ris)":RIS}"'
     }
     else {
         dis ""  // End line if nobrowser
