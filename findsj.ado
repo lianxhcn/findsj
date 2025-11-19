@@ -97,7 +97,10 @@ program define findsj_download
         }
     }
     
-    dis as text "Downloading `file_ext' file for `artid'..."
+    * Display download information in Results window
+    dis as text "Downloading " as result "`file_ext'" as text " file for article " as result "`artid'" as text "..."
+    dis as text "Save location: " as result `"{browse "`downloadpath'":`downloadpath'}"'
+    dis as text "File name: " as result "`file_name'"
 end
 
 *===============================================================================
@@ -117,7 +120,15 @@ syntax [anything(name=keywords id="keywords")] [, ///
     SETPath(string) QUERYpath RESETpath ///
     UPdate source(string) ///
     Type(string) ///
+    CLS ///
+    MD TEXT TEX ///
+    from(string) to(string) ///
     ]
+
+* Handle CLS option
+if "`cls'" != "" {
+    cls
+}
 
 * Check for updates (once per day)
 findsj_check_update
@@ -201,6 +212,25 @@ if "`debug'" != "" set trace on
 * Auto-enable getdoi when ref option is specified
 if "`ref'" != "" {
     local getdoi "getdoi"
+}
+
+* Check format options conflicts
+local format_opts "`md' `text' `tex'"
+if wordcount("`format_opts'") > 1 {
+    dis as error "Error: Only one format option (md, text, or tex) is allowed"
+    exit 198
+}
+
+* Set output format
+local output_format ""
+if "`md'" != "" {
+    local output_format "markdown"
+}
+else if "`text'" != "" {
+    local output_format "text"
+}
+else if "`tex'" != "" {
+    local output_format "latex"
 }
 
 * Read download path from config file
@@ -348,16 +378,15 @@ qui {
     drop v 
     keep if art_id != ""
     gen selected = 1
-    local n_results = _N
+    local n_results_before_time = _N
     
-    * Calculate how many results to display
-    if "`allresults'" != "" local n_display = `n_results'
-    else local n_display = min(`n', `n_results')
+    * Calculate how many results to display (will be updated after time filtering)
+    if "`allresults'" != "" local n_display = `n_results_before_time'
+    else local n_display = min(`n', `n_results_before_time')
 }  // Temporarily exit qui block for user messages
 
-* Create clickable link to show all results
+* Create clickable link to show all results (will be updated if time filtering is applied)
 local url_sj "https://www.stata-journal.com/sjsearch.html?choice=`scope'&q=`keywords_url'"
-dis as text "Showing " as result "`n_display'" as text " of " `"{browse "`url_sj'":`n_results' articles}"' _n
 
 qui {  // Resume qui block
     * Use HTML-extracted data as primary source
@@ -371,6 +400,46 @@ qui {  // Resume qui block
     gen doi = "."
     gen page = "."
     gen volnum = real(volume + "." + number) if volume != "" & volume != "."
+    
+    * Time range filtering (from/to options)
+    if "`from'" != "" | "`to'" != "" {
+        * Parse from date (format: YYYY-N, e.g., 2023-1)
+        if "`from'" != "" {
+            local from_clean = subinstr("`from'", "-", ".", .)
+            local from_val = real("`from_clean'")
+        }
+        else {
+            local from_val = 0  // No lower bound
+        }
+        
+        * Parse to date (format: YYYY-N, e.g., 2024-1)
+        if "`to'" != "" {
+            local to_clean = subinstr("`to'", "-", ".", .)
+            local to_val = real("`to_clean'")
+        }
+        else {
+            local to_val = 9999  // No upper bound
+        }
+        
+        * Filter by time range
+        if "`from'" != "" & "`to'" != "" {
+            keep if volnum >= `from_val' & volnum <= `to_val'
+        }
+        else if "`from'" != "" {
+            keep if volnum >= `from_val'
+        }
+        else if "`to'" != "" {
+            keep if volnum <= `to_val'
+        }
+        
+        * Update result count after time filtering
+        local n_results_after_time = _N
+        local time_filtered = 1
+    }
+    else {
+        local n_results_after_time = _N
+        local time_filtered = 0
+    }
     
     keep if selected == 1
     
@@ -415,11 +484,70 @@ qui {  // Resume qui block
     * Page string for display
     gen page_str = ": " + page if page != "" & page != "."
     replace page_str = "" if page_str == ": ."
+    
+    * Generate title with auto-wrap support for Results Window display
+    * Using {browse "URL":"text"} format for automatic line wrapping
+    local title_br `"{browse ""' + url_html + `"":"' + title + `"}"'
+    
+    * Generate formatted output strings based on output_format
+    if "`output_format'" == "markdown" {
+        * Markdown format: - Author, Year, [title](URL), Stata Journal Vol(No): pages
+        gen _title_link = "[" + title + "](" + url_html + ")"
+        gen _title_link_br = "[" + `"`title_br'"' + "](" + url_html + ")"
+        gen _journal_info = ", Stata Journal " + volnum_str if volnum_str != "" & volnum_str != "."
+        replace _journal_info = _journal_info + page_str if page_str != ""
+        replace _journal_info = "" if _journal_info == "."
+        gen _OutputStr = "- " + author + ", " + year + ", " + _title_link + _journal_info
+        gen _OutputDis = "- " + author + ", " + year + ", " + _title_link_br + _journal_info
+    }
+    else if "`output_format'" == "latex" {
+        * LaTeX format: - Author, Year, \href{URL}{title}, Stata Journal Vol(No): pages
+        gen _title_link = "\href{" + url_html + "}{" + title + "}"
+        gen _title_link_br = "\href{" + url_html + "}{" + `"`title_br'"' + "}"
+        gen _journal_info = ", Stata Journal " + volnum_str if volnum_str != "" & volnum_str != "."
+        replace _journal_info = _journal_info + page_str if page_str != ""
+        replace _journal_info = "" if _journal_info == "."
+        gen _OutputStr = "- " + author + ", " + year + ", " + _title_link + _journal_info
+        gen _OutputDis = "- " + author + ", " + year + ", " + _title_link_br + _journal_info
+    }
+    else if "`output_format'" == "text" {
+        * Plain text format: Author, Year, title, URL, Stata Journal Vol(No): pages
+        gen _journal_info = ", Stata Journal " + volnum_str if volnum_str != "" & volnum_str != "."
+        replace _journal_info = _journal_info + page_str if page_str != ""
+        replace _journal_info = "" if _journal_info == "."
+        gen _OutputStr = author + ", " + year + ", " + title + ", " + url_html + _journal_info
+        gen _OutputDis = author + ", " + year + ", " + `"`title_br'"' + ", " + url_html + _journal_info
+    }
 }
 
 local total_results = _N
 if "`allresults'" != "" local n_display = `total_results'
 else local n_display = min(`n', `total_results')
+
+* Display search summary with appropriate message
+if `time_filtered' == 1 {
+    * Time filtering was applied - show filtered results
+    dis as text "Showing " as result "`n_display'" as text " of " as result "`total_results'" as text " articles" _c
+    dis as text " (filtered from " as result "`n_results_before_time'" as text " total)" _n
+}
+else {
+    * No time filtering - show link to full online results
+    dis as text "Showing " as result "`n_display'" as text " of " `"{browse "`url_sj'":`total_results' articles}"' _n
+}
+
+* Display time range if from/to options are used
+if "`from'" != "" | "`to'" != "" {
+    dis as text "  Time range: " _c
+    if "`from'" != "" & "`to'" != "" {
+        dis as result "SJ `from'" as text " to " as result "SJ `to'" _n
+    }
+    else if "`from'" != "" {
+        dis as result "from SJ `from'" _n
+    }
+    else {
+        dis as result "up to SJ `to'" _n
+    }
+}
 
 * Save and increase line size to prevent wrapping
 local old_linesize = c(linesize)
@@ -427,6 +555,56 @@ quietly set linesize 255
 
 local n = `n_display'
 forvalues i = 1/`n' {
+    * For formatted output, use the pre-generated display string with auto-wrap
+    if "`output_format'" != "" {
+        local output_dis = _OutputDis[`i']
+        dis `"`output_dis'"'
+    }
+    else {
+        * Default format: Original display style
+        local volnum_i  = volnum_str[`i']
+        local author_i  = author[`i']
+        local title_i   = title[`i']
+        local year_i    = year[`i']
+        local art_id_i  = art_id[`i']
+        local art_id_clean_i = art_id_clean[`i']
+        local url_html_i = url_html[`i']
+        
+        * Create BOM-free version for Stata commands (search, etc.)
+        local art_id_nobom = subinstr("`art_id_i'", "ï»¿", "", .)
+        
+        * Clean HTML entities in title for display
+        local title_display = `"`title_i'"'
+        local title_display = subinstr(`"`title_display'"', "&amp;", "&", .)
+        local title_display = subinstr(`"`title_display'"', "&ndash;", "-", .)
+        local title_display = subinstr(`"`title_display'"', "&mdash;", "--", .)
+        local title_display = subinstr(`"`title_display'"', "&lt;", "<", .)
+        local title_display = subinstr(`"`title_display'"', "&gt;", ">", .)
+        local title_display = subinstr(`"`title_display'"', "&quot;", `"""', .)
+        
+        * First line: Article number and title (use smcl to prevent wrapping)
+        dis as text "{p 0 0 0}[" as result `i' as text "] " as result `"`title_display'"' as text "{p_end}"
+        
+        * Second line: Author, year, and journal info
+        dis as text "{p 4 4 4}" as result "`author_i'" as text " (" as result "`year_i'" as text "). " ///
+            as text "Stata Journal" _c
+        if "`volnum_i'" != "" & "`volnum_i'" != "." {
+            dis as text " " as result "`volnum_i'" _c
+        }
+        
+        cap local page_i = page[`i']
+        if "`page_i'" != "" & "`page_i'" != "." {
+            dis as text ": " as result "`page_i'" _c
+        }
+        dis as text "{p_end}"
+    }
+    
+    * Skip the rest for formatted output
+    if "`output_format'" != "" {
+        continue
+    }
+    
+    * Get article info for default format links
     local volnum_i  = volnum_str[`i']
     local author_i  = author[`i']
     local title_i   = title[`i']
@@ -434,34 +612,7 @@ forvalues i = 1/`n' {
     local art_id_i  = art_id[`i']
     local art_id_clean_i = art_id_clean[`i']
     local url_html_i = url_html[`i']
-    
-    * Create BOM-free version for Stata commands (search, etc.)
     local art_id_nobom = subinstr("`art_id_i'", "ï»¿", "", .)
-    
-    * Clean HTML entities in title for display
-    local title_display = `"`title_i'"'
-    local title_display = subinstr(`"`title_display'"', "&amp;", "&", .)
-    local title_display = subinstr(`"`title_display'"', "&ndash;", "-", .)
-    local title_display = subinstr(`"`title_display'"', "&mdash;", "--", .)
-    local title_display = subinstr(`"`title_display'"', "&lt;", "<", .)
-    local title_display = subinstr(`"`title_display'"', "&gt;", ">", .)
-    local title_display = subinstr(`"`title_display'"', "&quot;", `"""', .)
-    
-    * First line: Article number and title (use smcl to prevent wrapping)
-    dis as text "{p 0 0 0}[" as result `i' as text "] " as result `"`title_display'"' as text "{p_end}"
-    
-    * Second line: Author, year, and journal info
-    dis as text "{p 4 4 4}" as result "`author_i'" as text " (" as result "`year_i'" as text "). " ///
-        as text "Stata Journal" _c
-    if "`volnum_i'" != "" & "`volnum_i'" != "." {
-        dis as text " " as result "`volnum_i'" _c
-    }
-    
-    cap local page_i = page[`i']
-    if "`page_i'" != "" & "`page_i'" != "." {
-        dis as text ": " as result "`page_i'" _c
-    }
-    dis as text "{p_end}"
     
     * Get DOI and page info from data file or fetch real-time
     cap local doi_i = doi[`i']
@@ -540,7 +691,7 @@ forvalues i = 1/`n' {
         }
     }
     
-    if "`nobrowser'" == "" {
+    if "`nobrowser'" == "" & "`output_format'" == "" {
         dis as text "    " _c
         dis as text `"{browse "`url_html_i'":Article}"' _c
         
@@ -571,12 +722,16 @@ forvalues i = 1/`n' {
         dis as text " | " _c
         dis as text `"{stata "findsj `art_id_nobom', type(ris)":RIS}"'
     }
+    else if "`output_format'" != "" {
+        * In formatted output mode, skip browser links
+        dis ""
+    }
     else {
         dis ""  // End line if nobrowser
     }
     
-    * Display format buttons (.md .latex .txt) if ref option is specified
-    if "`ref'" != "" {
+    * Display format buttons (.md .latex .txt) if ref option is specified (but skip if output_format is set)
+    if "`ref'" != "" & "`output_format'" == "" {
         dis ""  // End the button line first
         
         * Check if we have DOI for generating citations
@@ -608,20 +763,68 @@ global findsj_n_display `n_display'
 if `total_results' > `n_display' {
     dis _n as text "{hline 60}"
     dis as text "  Showing " as result "`n_display'" as text " of " as result "`total_results'" as text " results."
-    dis as text "  To see all results, add option: " as result "allresults"
-    dis as text "  Example: " `"{stata "findsj `keywords', allresults":findsj `keywords', allresults}"'
+    if `time_filtered' == 1 {
+        * Time filtering applied - suggest adding allresults to see all filtered results
+        dis as text "  To see all filtered results, add option: " as result "allresults"
+        if "`from'" != "" & "`to'" != "" {
+            dis as text "  Example: " `"{stata "findsj `keywords', from(`from') to(`to') allresults":findsj `keywords', from(`from') to(`to') allresults}"'
+        }
+        else if "`from'" != "" {
+            dis as text "  Example: " `"{stata "findsj `keywords', from(`from') allresults":findsj `keywords', from(`from') allresults}"'
+        }
+        else {
+            dis as text "  Example: " `"{stata "findsj `keywords', to(`to') allresults":findsj `keywords', to(`to') allresults}"'
+        }
+    }
+    else {
+        * No time filtering - standard message
+        dis as text "  To see all results, add option: " as result "allresults"
+        dis as text "  Example: " `"{stata "findsj `keywords', allresults":findsj `keywords', allresults}"'
+    }
     dis as text "{hline 60}"
 }
 
 * Note: Batch clipboard copy removed. Users can click individual "Ref" buttons to copy citations.
 * This provides better user experience and avoids command-line length limitations.
 
+* Export formatted output to file if format option specified
+if "`output_format'" != "" {
+    * Determine file extension
+    if "`output_format'" == "markdown" {
+        local fn_suffix ".md"
+    }
+    else if "`output_format'" == "latex" {
+        local fn_suffix ".txt"
+    }
+    else if "`output_format'" == "text" {
+        local fn_suffix ".txt"
+    }
+    
+    * Set save path (current directory)
+    local path `"`c(pwd)'"'
+    local path = subinstr(`"`path'"', "\\", "/", .)
+    local saving "_findsj_temp_out_`fn_suffix'"
+    
+    * Export to file
+    qui export delimited _OutputStr using `"`path'/`saving'"', ///
+        novar nolabel delimiter(tab) replace
+    
+    * Display file location with four buttons (View/Open_Mac/Open_Win/dir)
+    dis " "
+    dis _dup(58) "-" _n ///
+        _col(3)  `"{stata `" view  "`path'/`saving'" "': View}"' ///
+        _col(17) `"{stata `" !open "`path'/`saving'" "' : Open_Mac}"' ///
+        _col(30) `"{stata `" winexec cmd /c start "" "`path'/`saving'" "' : Open_Win}"' ///
+        _col(50) `"{browse `"`path'"': dir}"'
+    dis _dup(58) "-"
+}
+
 return local keywords   = "`keywords'"
 return local scope      = "`scope'"
 return local url        = "`url_sj'"
-return scalar n_results = `n_results'
+return scalar n_results = `total_results'
 
-if `n_results' > 0 {
+if `total_results' > 0 {
     return local art_id_1  = art_id[1]
     return local title_1   = title[1]
     return local author_1  = author[1]
@@ -632,8 +835,14 @@ if `n_results' > 0 {
 restore
 
 dis _n as text "{hline 60}"
-dis as text "  Search completed. Found " as result `n_results' as text " article(s)."
-if "`nobrowser'" == "" {
+dis as text "  Search completed. Found " as result `total_results' as text " article(s)" _c
+if `time_filtered' == 1 {
+    dis as text " (filtered from " as result "`n_results_before_time'" as text " total)."
+}
+else {
+    dis as text "."
+}
+if "`nobrowser'" == "" & `time_filtered' == 0 {
     dis as text "  To view full search results online: " _c
     dis as text `"{browse "`url_sj'":Open in browser}"'
 }
